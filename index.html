@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pokemon Type Dex</title>
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+
+<h1>Pokémon Type Dex</h1>
+
+<div class="search">
+
+    <input
+        id="pokemonInput"
+        list="pokemonList"
+        placeholder="Search Pokémon..."
+        autocomplete="off">
+
+    <datalist id="pokemonList"></datalist>
+
+    <button onclick="searchPokemon()">
+        Search
+    </button>
+
+
+</div>
+<div class="search">
+
+</div>
+
+<h2>Pokémon</h2>
+
+<div id="result"></div>
+
+
+<h2>Type Reference</h2>
+
+<div id="typeGrid"></div>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
