@@ -252,12 +252,12 @@ const typeColorMap = types.reduce((map, type) => {
 
 function getTypeIconUrl(name) {
     const key = name.toLowerCase();
-    return `Images/${typeIconMap[key] || key}.svg`;
+    return `./Images/${typeIconMap[key] || key}.svg`;
 }
 
 function getTypeBannerUrl(name) {
     const key = name.toLowerCase();
-    return `Images/Banners/${typeBannerMap[key] || typeBannerMap.normal}`;
+    return `./Images/Banners/${typeBannerMap[key] || typeBannerMap.normal}`;
 }
 
 function normalize(value) {
@@ -789,7 +789,7 @@ function renderTeraCrystalPage(){
     // Build tera crystals array dynamically from `types` (name, color, icon, image)
     function getTeraImageUrl(name){
         const key = name.toLowerCase();
-        return `Images/tera/tera-${key}.png`;
+        return `./Images/tera/tera-${key}.png`;
     }
 
     const teraCrystals = types.map(t => ({
@@ -854,7 +854,7 @@ function renderTypeReferencePage(){
         <section class="reference-section">
             <div class="section-header">
                 <div class="reference-heading">
-                    <img class="reference-title-icon" src="Images/pokeball.png" alt="Pokéball">
+                    <img class="reference-title-icon" src="./Images/pokeball.png" alt="Pokéball">
                     <div>
                         <h2>Type Reference</h2>
                         <p>Explore strengths, weaknesses, and interactions for every type.</p>
@@ -878,7 +878,7 @@ function renderTypeReferencePage(){
                             </div>
                         </div>
                         <div class="panel-hero" id="panelHero">
-                            <img src="Images/Banners/normal-banner.png" alt="Normal banner">
+                            <img src="./Images/Banners/normal-banner.png" alt="Normal banner">
                         </div>
                     </div>
                     <div class="type-panel-grid">
