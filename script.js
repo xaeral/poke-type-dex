@@ -1,6 +1,11 @@
 const pokemonNames = [];
 const typeDataCache = new Map();
 const abilityDataCache = new Map();
+const encounterDataCache = new Map();
+const mapGenieLocationCache = new Map();
+const pokemonDbLocationCache = new Map();
+const speciesDataCache = new Map();
+const evolutionChainCache = new Map();
 const allTypes = [
     "normal","fire","water","electric","grass","ice",
     "fighting","poison","ground","flying","psychic",
@@ -1081,6 +1086,375 @@ async function getAbilityDetails(abilityEntries) {
     }));
 }
 
+function formatLocationName(value) {
+    return capitalize(String(value || "").replace(/-/g, " "));
+}
+
+function formatPokemonName(value) {
+    return capitalize(String(value || "").replace(/-/g, " "));
+}
+
+function formatVersionLabel(versions) {
+    const unique = [...new Set(versions)];
+    if (!unique.length) return "Scarlet/Violet";
+    if (unique.length === 1 && unique[0] === "scarlet-violet") {
+        return "Scarlet/Violet";
+    }
+    if (unique.length === 2 && unique.includes("scarlet") && unique.includes("violet")) {
+        return "Scarlet/Violet";
+    }
+    return unique.map(version => capitalize(version)).join(" / ");
+}
+
+function normalizePokemonLookupName(value) {
+    return String(value || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .trim();
+}
+
+function collectMapGenieNodes(node, out) {
+    if (!node) return;
+    if (Array.isArray(node)) {
+        node.forEach(item => collectMapGenieNodes(item, out));
+        return;
+    }
+    if (typeof node !== "object") return;
+
+    const name = node.name || node.title || node.label;
+    const category = node.category || node.group || node.type || node.icon || "";
+    const lat = node.lat ?? node.latitude ?? node.y;
+    const lng = node.lng ?? node.longitude ?? node.x;
+    const location = node.location || node.region || node.zone || node.area;
+
+    if (name && (lat !== undefined || lng !== undefined || location)) {
+        out.push({
+            name: String(name),
+            category: String(category || ""),
+            lat: lat !== undefined ? Number(lat) : null,
+            lng: lng !== undefined ? Number(lng) : null,
+            location: location ? String(location) : ""
+        });
+    }
+
+    Object.values(node).forEach(value => {
+        if (typeof value === "object") collectMapGenieNodes(value, out);
+    });
+}
+
+function findMapGeniePokemonLocations(payload, pokemonName) {
+    const normalizedName = normalizePokemonLookupName(pokemonName);
+    if (!normalizedName) return [];
+
+    const candidates = [];
+    collectMapGenieNodes(payload, candidates);
+
+    const rows = candidates.filter(entry => {
+        const entryName = normalizePokemonLookupName(entry.name);
+        if (!entryName) return false;
+        if (entryName !== normalizedName && !entryName.includes(normalizedName) && !normalizedName.includes(entryName)) {
+            return false;
+        }
+
+        const category = entry.category.toLowerCase();
+        return category.includes("pokemon") || category.includes("spawn") || category.includes("encounter");
+    }).slice(0, 24);
+
+    return rows.map(entry => {
+        const hasCoords = Number.isFinite(entry.lat) && Number.isFinite(entry.lng);
+        const coordinateText = hasCoords ? `${entry.lat.toFixed(4)}, ${entry.lng.toFixed(4)}` : "Unknown coordinates";
+        return {
+            location: entry.location || "Paldea Region",
+            versionsLabel: "MapGenie",
+            maxChance: 0,
+            notes: coordinateText
+        };
+    });
+}
+
+async function getMapGeniePokemonLocations(pokemonName) {
+    const key = normalizePokemonLookupName(pokemonName);
+    if (!key) return [];
+    if (mapGenieLocationCache.has(key)) return mapGenieLocationCache.get(key);
+
+    const candidateUrls = [
+        "https://mapgenie.io/api/v1/games/pokemon-scarlet-and-violet/maps/paldea-region/locations",
+        "https://mapgenie.io/api/v1/game/pokemon-scarlet-and-violet/map/paldea-region/locations",
+        "https://mapgenie.io/api/v1/map/pokemon-scarlet-and-violet/paldea-region/locations"
+    ];
+
+    for (const url of candidateUrls) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) continue;
+            const data = await response.json();
+            const locations = findMapGeniePokemonLocations(data, pokemonName);
+            if (locations.length) {
+                mapGenieLocationCache.set(key, locations);
+                return locations;
+            }
+        } catch {
+            continue;
+        }
+    }
+
+    mapGenieLocationCache.set(key, []);
+    return [];
+}
+
+function stripMarkdownLinks(value) {
+    return String(value || "").replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1");
+}
+
+function parsePokemonDbLocationRow(line) {
+    if (!line || !line.includes("|")) return null;
+    const parts = line.split("|").map(part => part.trim()).filter(Boolean);
+    if (parts.length < 2) return null;
+
+    const rawVersion = parts[0].toLowerCase();
+    let versionsLabel = "";
+    if (rawVersion === "scarlet") versionsLabel = "Scarlet";
+    else if (rawVersion === "violet") versionsLabel = "Violet";
+    else if (rawVersion === "scarlet violet") versionsLabel = "Scarlet/Violet";
+    else return null;
+
+    const locationColumn = parts[1];
+    if (!/\/location\//i.test(locationColumn)) return null;
+
+    const cleanedLocations = stripMarkdownLinks(locationColumn)
+        .replace(/<br\s*\/?>/gi, ",")
+        .split(",")
+        .map(item => item.trim())
+        .filter(Boolean);
+
+    return {
+        versionsLabel,
+        locations: cleanedLocations
+    };
+}
+
+async function getPokemonDbScarletVioletLocations(pokemonName) {
+    const key = normalizePokemonLookupName(pokemonName);
+    if (!key) return [];
+    if (pokemonDbLocationCache.has(key)) return pokemonDbLocationCache.get(key);
+
+    try {
+        const url = `https://r.jina.ai/http://pokemondb.net/pokedex/${encodeURIComponent(key)}/location`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            pokemonDbLocationCache.set(key, []);
+            return [];
+        }
+
+        const text = await response.text();
+        const rows = text
+            .split("\n")
+            .map(line => parsePokemonDbLocationRow(line))
+            .filter(Boolean);
+
+        if (!rows.length) {
+            pokemonDbLocationCache.set(key, []);
+            return [];
+        }
+
+        const flattened = rows.flatMap(row => row.locations.map(location => ({
+            location: formatLocationName(location),
+            versionsLabel: row.versionsLabel,
+            maxChance: 0
+        })));
+
+        const deduped = [];
+        const seen = new Set();
+        flattened.forEach(entry => {
+            const id = `${entry.location.toLowerCase()}::${entry.versionsLabel.toLowerCase()}`;
+            if (seen.has(id)) return;
+            seen.add(id);
+            deduped.push(entry);
+        });
+
+        const results = deduped.slice(0, 24);
+        pokemonDbLocationCache.set(key, results);
+        return results;
+    } catch {
+        pokemonDbLocationCache.set(key, []);
+        return [];
+    }
+}
+
+function summarizeLocationEntries(entries) {
+    if (!entries.length) return null;
+
+    const byLocation = new Map();
+    entries.forEach(entry => {
+        const normalized = String(entry.location || "").trim();
+        if (!normalized) return;
+
+        const key = normalized.toLowerCase();
+        if (!byLocation.has(key)) {
+            byLocation.set(key, {
+                location: normalized,
+                hasScarlet: false,
+                hasViolet: false
+            });
+        }
+
+        const target = byLocation.get(key);
+        const versionLabel = String(entry.versionsLabel || "").toLowerCase();
+        if (versionLabel.includes("scarlet")) target.hasScarlet = true;
+        if (versionLabel.includes("violet")) target.hasViolet = true;
+    });
+
+    const items = [...byLocation.values()];
+
+    return {
+        items
+    };
+}
+
+async function getSpeciesData(speciesUrl) {
+    if (!speciesUrl) return null;
+    if (speciesDataCache.has(speciesUrl)) return speciesDataCache.get(speciesUrl);
+    try {
+        const response = await fetch(speciesUrl);
+        if (!response.ok) {
+            speciesDataCache.set(speciesUrl, null);
+            return null;
+        }
+        const data = await response.json();
+        speciesDataCache.set(speciesUrl, data);
+        return data;
+    } catch {
+        speciesDataCache.set(speciesUrl, null);
+        return null;
+    }
+}
+
+async function getEvolutionChainData(chainUrl) {
+    if (!chainUrl) return null;
+    if (evolutionChainCache.has(chainUrl)) return evolutionChainCache.get(chainUrl);
+    try {
+        const response = await fetch(chainUrl);
+        if (!response.ok) {
+            evolutionChainCache.set(chainUrl, null);
+            return null;
+        }
+        const data = await response.json();
+        evolutionChainCache.set(chainUrl, data);
+        return data;
+    } catch {
+        evolutionChainCache.set(chainUrl, null);
+        return null;
+    }
+}
+
+function findEvolutionNode(chainNode, pokemonName) {
+    if (!chainNode || !pokemonName) return null;
+    if (chainNode.species?.name === pokemonName) return chainNode;
+    for (const child of chainNode.evolves_to || []) {
+        const match = findEvolutionNode(child, pokemonName);
+        if (match) return match;
+    }
+    return null;
+}
+
+function formatEvolutionRequirement(detail) {
+    if (!detail) return "Condition unknown";
+
+    const parts = [];
+    const trigger = detail.trigger?.name || "";
+
+    if (trigger === "level-up") {
+        parts.push(detail.min_level ? `At level ${detail.min_level}` : "Level up");
+    } else if (trigger === "trade") {
+        parts.push("Trade");
+    } else if (trigger === "use-item") {
+        parts.push("Use item");
+    }
+
+    if (detail.item?.name) {
+        const itemName = formatLocationName(detail.item.name);
+        parts.push(trigger === "use-item" ? `Use ${itemName}` : `With ${itemName}`);
+    }
+    if (detail.held_item?.name) parts.push(`While holding ${formatLocationName(detail.held_item.name)}`);
+    if (detail.location?.name) parts.push(`At ${formatLocationName(detail.location.name)}`);
+    if (detail.time_of_day) parts.push(`During ${capitalize(detail.time_of_day)}`);
+    if (detail.min_happiness) parts.push(`With friendship ${detail.min_happiness}+`);
+    if (detail.min_affection) parts.push(`With affection ${detail.min_affection}+`);
+    if (detail.min_beauty) parts.push(`With beauty ${detail.min_beauty}+`);
+    if (detail.known_move?.name) parts.push(`Knowing ${formatLocationName(detail.known_move.name)}`);
+    if (detail.known_move_type?.name) parts.push(`Knowing a ${formatLocationName(detail.known_move_type.name)}-type move`);
+    if (detail.gender === 1) parts.push("Female only");
+    if (detail.gender === 2) parts.push("Male only");
+    if (detail.needs_overworld_rain) parts.push("During rain");
+    if (detail.turn_upside_down) parts.push("Turn device upside down");
+    if (detail.trade_species?.name) parts.push(`For ${formatPokemonName(detail.trade_species.name)}`);
+
+    return parts.length ? parts.join(" • ") : "Condition unknown";
+}
+
+async function getEvolutionInfo(pokemonName, speciesUrl) {
+    const speciesData = await getSpeciesData(speciesUrl);
+    if (!speciesData) return null;
+
+    const chainUrl = speciesData.evolution_chain?.url;
+    const chainData = await getEvolutionChainData(chainUrl);
+    const currentNode = chainData?.chain ? findEvolutionNode(chainData.chain, pokemonName) : null;
+
+    const evolvesTo = (currentNode?.evolves_to || []).map(target => {
+        const details = (target.evolution_details || []).map(formatEvolutionRequirement).filter(Boolean);
+        return {
+            name: target.species?.name || "Unknown",
+            methods: details.length ? details : ["Condition unknown"]
+        };
+    });
+
+    return {
+        evolvesTo
+    };
+}
+
+async function getScarletVioletLocations(encountersUrl) {
+    if (!encountersUrl) return [];
+    if (encounterDataCache.has(encountersUrl)) return encounterDataCache.get(encountersUrl);
+
+    try {
+        const response = await fetch(encountersUrl);
+        if (!response.ok) {
+            encounterDataCache.set(encountersUrl, []);
+            return [];
+        }
+
+        const data = await response.json();
+        const locations = (Array.isArray(data) ? data : [])
+            .map(entry => {
+                const versionDetails = (entry.version_details || []).filter(detail => {
+                    const versionName = detail.version?.name;
+                    return versionName === "scarlet" || versionName === "violet" || versionName === "scarlet-violet";
+                });
+
+                if (!versionDetails.length) return null;
+
+                const versions = versionDetails.map(detail => detail.version?.name).filter(Boolean);
+                const maxChance = Math.max(...versionDetails.map(detail => Number(detail.max_chance || 0)));
+
+                return {
+                    location: formatLocationName(entry.location_area?.name || "Unknown area"),
+                    versionsLabel: formatVersionLabel(versions),
+                    maxChance
+                };
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.location.localeCompare(b.location));
+
+        encounterDataCache.set(encountersUrl, locations);
+        return locations;
+    } catch {
+        encounterDataCache.set(encountersUrl, []);
+        return [];
+    }
+}
+
 async function searchPokemon() {
     const name = normalize(input.value);
     if (!name) {
@@ -1098,6 +1472,16 @@ async function searchPokemon() {
         const artwork = pokemon.sprites.other?.["official-artwork"]?.front_default || pokemon.sprites.front_default;
         const defensive = await getTypeEffectiveness(types);
         const offensive = await getOffensiveMatchups(types);
+        const [scarletVioletLocations, mapGenieLocations, pokemonDbLocations, evolutionInfo] = await Promise.all([
+            getScarletVioletLocations(pokemon.location_area_encounters),
+            getMapGeniePokemonLocations(pokemon.name),
+            getPokemonDbScarletVioletLocations(pokemon.name),
+            getEvolutionInfo(pokemon.name, pokemon.species?.url)
+        ]);
+        const displayLocations = scarletVioletLocations.length
+            ? scarletVioletLocations
+            : (mapGenieLocations.length ? mapGenieLocations : pokemonDbLocations);
+        const locationSummary = summarizeLocationEntries(displayLocations);
 
         const defense4x = [];
         const defense2x = [];
@@ -1173,6 +1557,43 @@ async function searchPokemon() {
                                     ${offense25x.length ? `<div class="badge-tag">×¼: ${offense25x.map(capitalize).join(", ")}</div>` : ""}
                                     ${noEffect.length ? `<div class="badge-tag">0: ${noEffect.map(capitalize).join(", ")}</div>` : ""}
                                 </div>
+                            </section>
+                        </div>
+                        <div class="card-row">
+                            <section class="card-panel">
+                                <h3>Where To Find (Scarlet/Violet)</h3>
+                                ${locationSummary ? `
+                                    <div class="encounter-list">
+                                        <div class="encounter-item">
+                                            <strong>Locations</strong>
+                                            <span class="location-inline">${locationSummary.items.map((item, index) => `
+                                                <span class="location-inline-item">
+                                                    ${escapeHtml(item.location)}
+                                                    ${item.hasScarlet && !item.hasViolet ? `<span class="version-pill version-scarlet" aria-label="Scarlet only">S</span>` : ""}
+                                                    ${item.hasViolet && !item.hasScarlet ? `<span class="version-pill version-violet" aria-label="Violet only">V</span>` : ""}
+                                                </span>
+                                            `).join(`<span class="location-inline-comma">, </span>`)}</span>
+                                        </div>
+                                    </div>
+                                ` : `<p class="encounter-empty">No Scarlet/Violet encounter locations were found from available sources right now.</p>`}
+                            </section>
+                        </div>
+                        <div class="card-row">
+                            <section class="card-panel">
+                                <h3>Evolution</h3>
+                                ${evolutionInfo ? `
+                                    <div class="encounter-list">
+                                        ${evolutionInfo.evolvesTo.length ? evolutionInfo.evolvesTo.map(target => `
+                                            <div class="encounter-item">
+                                                <span>${escapeHtml(target.methods.join(" or "))} → ${escapeHtml(formatPokemonName(target.name))}</span>
+                                            </div>
+                                        `).join("") : `
+                                            <div class="encounter-item">
+                                                <span>This Pokémon does not evolve further.</span>
+                                            </div>
+                                        `}
+                                    </div>
+                                ` : `<p class="encounter-empty">Evolution details are currently unavailable.</p>`}
                             </section>
                         </div>
                     </div>

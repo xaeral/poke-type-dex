@@ -516,6 +516,66 @@ button#searchButton:hover{
     transform:translateX(-50%) translateY(0);
 }
 
+.encounter-list{
+    display:grid;
+    gap:10px;
+}
+
+.encounter-item{
+    display:grid;
+    gap:4px;
+    padding:10px 12px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:var(--surface);
+}
+
+.encounter-item strong{
+    font-size:0.95rem;
+}
+
+.encounter-item span{
+    color:var(--muted);
+    font-size:0.86rem;
+    line-height:1.4;
+}
+
+.location-inline-item{
+    color:var(--text);
+}
+
+.location-inline-comma{
+    color:var(--muted);
+}
+
+.version-pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:1.15rem;
+    height:1.15rem;
+    margin-left:6px;
+    border-radius:999px;
+    font-size:0.74rem;
+    font-weight:800;
+    line-height:1;
+    color:#fff;
+}
+
+.version-scarlet{
+    background:#d13a3a;
+}
+
+.version-violet{
+    background:#7b4ee6;
+}
+
+.encounter-empty{
+    margin:0;
+    color:var(--muted);
+    font-size:0.94rem;
+}
+
 .stats-grid{
     display:grid;
     gap:12px;
