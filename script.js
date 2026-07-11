@@ -646,6 +646,8 @@ let adventureMapPositionState = null;
 let adventureDragState = null;
 let adventureSuppressMarkerClick = false;
 const adventureProgressStorageKey = "adventureGuideProgressV1";
+let adventureMapAspectRatio = 1;
+const adventureMapZoom = 1.28;
 let adventureCompletedObjectiveIds = new Set();
 
 function loadAdventureProgress() {
@@ -1389,6 +1391,44 @@ function getAdventureMarkerPosition(objective) {
     };
 }
 
+function sizeAdventureMapInner() {
+    const viewport = el("adventureMapViewport");
+    const inner = el("adventureMapInner");
+    if (!viewport || !inner) return null;
+
+    const viewportRect = viewport.getBoundingClientRect();
+    if (!viewportRect.width || !viewportRect.height) return null;
+
+    const ratio = Number.isFinite(adventureMapAspectRatio) && adventureMapAspectRatio > 0
+        ? adventureMapAspectRatio
+        : 1;
+    const widthFromViewport = viewportRect.width * adventureMapZoom;
+    const widthFromHeight = viewportRect.height * adventureMapZoom * ratio;
+    const targetWidth = Math.ceil(Math.max(widthFromViewport, widthFromHeight));
+    const targetHeight = Math.ceil(targetWidth / ratio);
+
+    inner.style.width = `${targetWidth}px`;
+    inner.style.height = `${targetHeight}px`;
+
+    return {
+        innerWidth: targetWidth,
+        innerHeight: targetHeight
+    };
+}
+
+function syncAdventureMapAspectRatio() {
+    const mapImage = document.querySelector(".adventure-map-base");
+    if (!mapImage) return false;
+
+    if (!mapImage.naturalWidth || !mapImage.naturalHeight) return false;
+
+    const nextRatio = mapImage.naturalWidth / mapImage.naturalHeight;
+    if (!Number.isFinite(nextRatio) || nextRatio <= 0) return false;
+
+    adventureMapAspectRatio = nextRatio;
+    return true;
+}
+
 function renderAdventureList() {
     const listEl = el("adventureObjectiveList");
     if (!listEl) return;
@@ -1430,6 +1470,8 @@ function panAdventureMapTo(objective) {
     const inner = el("adventureMapInner");
     if (!viewport || !inner || !objective) return null;
 
+    sizeAdventureMapInner();
+
     const viewportRect = viewport.getBoundingClientRect();
     const innerWidth = inner.offsetWidth;
     const innerHeight = inner.offsetHeight;
@@ -1439,28 +1481,41 @@ function panAdventureMapTo(objective) {
 
     const rawX = (viewportRect.width / 2) - markerX;
     const rawY = (viewportRect.height / 2) - markerY;
-    return applyAdventureMapTransform(rawX, rawY);
+    // Clamp selection pans so edge objectives never throw the map outside bounds.
+    return applyAdventureMapTransform(rawX, rawY, { clamp: true });
 }
 
-function applyAdventureMapTransform(translateX, translateY) {
+function applyAdventureMapTransform(translateX, translateY, options = {}) {
     const viewport = el("adventureMapViewport");
     const inner = el("adventureMapInner");
     if (!viewport || !inner) return null;
+
+    const { clamp = true } = options;
 
     const viewportRect = viewport.getBoundingClientRect();
     const innerWidth = inner.offsetWidth;
     const innerHeight = inner.offsetHeight;
 
-    const minX = viewportRect.width - innerWidth;
-    const minY = viewportRect.height - innerHeight;
+    let nextX = translateX;
+    let nextY = translateY;
 
-    const clampedX = Math.min(0, Math.max(minX, translateX));
-    const clampedY = Math.min(0, Math.max(minY, translateY));
-    inner.style.transform = `translate(${clampedX}px, ${clampedY}px)`;
+    if (clamp) {
+        // Allow limited overscroll so edge objectives can still center without losing the map.
+        const overflowX = Math.min(viewportRect.width * 0.35, innerWidth * 0.2);
+        const overflowY = Math.min(viewportRect.height * 0.35, innerHeight * 0.2);
+        const minX = (viewportRect.width - innerWidth) - overflowX;
+        const minY = (viewportRect.height - innerHeight) - overflowY;
+        const maxX = overflowX;
+        const maxY = overflowY;
+        nextX = Math.min(maxX, Math.max(minX, translateX));
+        nextY = Math.min(maxY, Math.max(minY, translateY));
+    }
+
+    inner.style.transform = `translate(${nextX}px, ${nextY}px)`;
 
     adventureMapPositionState = {
-        translateX: clampedX,
-        translateY: clampedY,
+        translateX: nextX,
+        translateY: nextY,
         innerWidth,
         innerHeight
     };
@@ -1468,9 +1523,18 @@ function applyAdventureMapTransform(translateX, translateY) {
     return adventureMapPositionState;
 }
 
+function centerAdventureObjective(objective) {
+    if (!objective) return;
+
+    const centeredState = panAdventureMapTo(objective);
+    renderAdventureMapPopout(objective, centeredState);
+}
+
 function renderAdventureMap() {
     const mapInner = el("adventureMapInner");
     if (!mapInner) return;
+
+    sizeAdventureMapInner();
 
     mapInner.innerHTML = `
         <img class="adventure-map-base" src="./Images/adventure/paldea.jpg" alt="Paldea map" loading="lazy" draggable="false" onerror="this.onerror=null;this.src='./Images/maps/paldea-map.png'">
@@ -1496,14 +1560,31 @@ function renderAdventureMap() {
         }).join("")}
     `;
 
+    const mapImage = mapInner.querySelector(".adventure-map-base");
+    if (mapImage) {
+        const applyImageSizing = () => {
+            if (!syncAdventureMapAspectRatio()) return;
+            sizeAdventureMapInner();
+            if (selectedAdventureObjectiveId) {
+                const selectedObjective = getAdventureObjectiveById(selectedAdventureObjectiveId);
+                centerAdventureObjective(selectedObjective);
+            }
+        };
+
+        if (mapImage.complete) {
+            applyImageSizing();
+        } else {
+            mapImage.addEventListener("load", applyImageSizing, { once: true });
+        }
+    }
+
     if (!selectedAdventureObjectiveId) {
         renderAdventureMapPopout(null, null);
         return;
     }
 
     const selectedObjective = getAdventureObjectiveById(selectedAdventureObjectiveId);
-    const mapState = panAdventureMapTo(selectedObjective);
-    renderAdventureMapPopout(selectedObjective, mapState);
+    centerAdventureObjective(selectedObjective);
 }
 
 function renderAdventureMapPopout(objective, mapState) {
@@ -1546,6 +1627,7 @@ function renderAdventureMapPopout(objective, mapState) {
 
     popout.style.left = `${left}px`;
     popout.style.top = `${top}px`;
+    popout.classList.remove("below");
 
     // Flip below marker if there is not enough room above.
     const popoutRect = popout.getBoundingClientRect();
@@ -1553,7 +1635,12 @@ function renderAdventureMapPopout(objective, mapState) {
         popout.classList.add("below");
     }
 
-    const markerVisible = left >= 0 && left <= viewportRect.width && top >= 0 && top <= viewportRect.height;
+    const visibilityPad = 28;
+    const markerVisible =
+        left >= -visibilityPad &&
+        left <= viewportRect.width + visibilityPad &&
+        top >= -visibilityPad &&
+        top <= viewportRect.height + visibilityPad;
     popout.classList.toggle("is-hidden", !markerVisible);
 }
 
@@ -1736,15 +1823,15 @@ function renderAdventureGuidePage() {
         window.removeEventListener("resize", adventureResizeHandler);
     }
     adventureResizeHandler = () => {
+        sizeAdventureMapInner();
         const objective = getAdventureObjectiveById(selectedAdventureObjectiveId);
-        const mapState = panAdventureMapTo(objective);
-        renderAdventureMapPopout(objective, mapState);
+        centerAdventureObjective(objective);
     };
     window.addEventListener("resize", adventureResizeHandler);
 
     window.requestAnimationFrame(() => {
         const objective = getAdventureObjectiveById(selectedAdventureObjectiveId);
-        panAdventureMapTo(objective);
+        centerAdventureObjective(objective);
     });
 }
 
