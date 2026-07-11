@@ -37,54 +37,15 @@
         <div id="result" class="result"></div>
     </section>
 
-    <section class="reference-section">
-        <div class="section-header">
-            <div class="reference-heading">
-                <img class="reference-title-icon" src="Images/pokeball.png" alt="Pokéball">
-                <div>
-                    <h2>Type Reference</h2>
-                    <p>Explore strengths, weaknesses, and interactions for every type.</p>
-                </div>
-            </div>
-            <div class="reference-meta">Click any type to view details</div>
-        </div>
+    <!-- Navigation and dynamic page content (SPA) -->
+    <nav class="main-nav">
+        <button class="nav-item active" data-page="reference">Type Reference</button>
+        <button class="nav-item" data-page="tera">Tera Crystals</button>
+    </nav>
 
-        <div class="reference-grid">
-            <div class="type-list">
-                <div class="type-list-title">All Types</div>
-                <div id="typeGrid" class="type-grid"></div>
-                <div class="type-tip">Tip: Damage multipliers are shown from the attacker’s type vs. the defender’s type.</div>
-            </div>
-            <div class="type-panel" id="typePanel">
-                <div class="type-panel-header" id="panelHeader">
-                    <div class="panel-badge" id="panelTypeBadge"></div>
-                    <div class="panel-info" id="panelInfo">
-                        <div class="panel-info-inner">
-                            <h3 id="panelTypeName">Normal</h3>
-                            <p id="panelTypeSummary">Balanced and versatile. No special strengths, but few weaknesses.</p>
-                        </div>
-                    </div>
-                    <div class="panel-hero" id="panelHero">
-                        <img src="Images/Banners/normal-banner.png" alt="Normal banner">
-                    </div>
-                </div>
-                <div class="type-panel-grid">
-                    <div class="panel-card">
-                        <h4>Defensive Effectiveness</h4>
-                        <p id="panelDefensiveDescription" class="panel-description">How other types attack affect Normal.</p>
-                        <div id="panelDefensive" class="effectiveness-grid"></div>
-                    </div>
-                    <div class="panel-card">
-                        <h4>Offensive Effectiveness</h4>
-                        <p id="panelOffensiveDescription" class="panel-description">How Normal type attacks affect others.</p>
-                        <div id="panelOffensive" class="effectiveness-grid"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+    <div id="pageContent" class="page-content"></div>
 </div>
 
 <script src="script.js"></script>
 </body>
-</html>
+</html>>

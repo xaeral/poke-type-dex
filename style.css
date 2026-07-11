@@ -177,6 +177,136 @@ button#searchButton:hover{
     margin-top:32px;
 }
 
+/* SPA navigation */
+.main-nav{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-top:18px;
+    margin-bottom:18px;
+}
+.main-nav .nav-item{
+    border:1px solid var(--border);
+    background:var(--surface-strong);
+    color:var(--text);
+    padding:8px 12px;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:700;
+}
+.main-nav .nav-item.active{
+    background:var(--accent);
+    color:#fff;
+    border-color:transparent;
+}
+
+.page-content{
+    margin-top:8px;
+}
+
+/* Tera Crystals gallery */
+.tera-grid{
+    display:grid;
+    gap:18px;
+    grid-template-columns:repeat(6, minmax(0,1fr));
+    align-items:start;
+    justify-items:center;
+}
+
+.tera-card{
+    display:flex;
+    flex-direction:column;
+    width:min(100%, 251px);
+    border-radius:14px;
+    overflow:hidden;
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
+    border:1px solid var(--accent);
+    border-top: none;
+    cursor:pointer;
+    transition:transform .28s cubic-bezier(.2,.9,.2,1), box-shadow .28s ease;
+    box-shadow:0 12px 36px rgba(2,6,23,0.12);
+    min-height:160px;
+}
+
+.tera-card:hover{
+    transform:translateY(-6px);
+    box-shadow:0 18px 40px rgba(2,6,23,0.16), 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.tera-card-header{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:4px 6px 5px;
+    background:transparent;
+    border-top-left-radius:14px;
+    border-top-right-radius:14px;
+    margin:0 0 -1px 0;
+    border-top:1px solid var(--accent);
+}
+
+.tera-icon-wrap{
+    width:56px;
+    height:56px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:transparent;
+    box-shadow:none;
+}
+
+.tera-card-icon{
+    width:40px;
+    height:40px;
+    object-fit:contain;
+}
+
+.tera-card-art{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    min-height:0;
+    position:relative;
+    background:linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.08));
+    border-top:1px solid var(--accent);
+    border-bottom:1px solid var(--accent);
+}
+
+.tera-card-art img{
+    display:block;
+    width:calc(100% + 10px);
+    height:auto;
+    max-width:none;
+    max-height:none;
+    object-fit:contain;
+    opacity:0.92;
+    margin:0 -5px;
+    transition:opacity .28s ease;
+    mix-blend-mode:normal;
+}
+
+.tera-card:hover .tera-card-art img{
+    opacity:1;
+}
+
+.tera-card-footer{
+    padding:10px 14px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-top:1px solid rgba(255,255,255,0.04);
+    background:linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.06));
+}
+
+.tera-card-label{
+    color:#fff;
+    font-weight:800;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    font-size:0.92rem;
+}
+
 .section-header{
     display:flex;
     justify-content:space-between;
@@ -922,6 +1052,10 @@ button#searchButton:hover{
         grid-template-columns:1fr;
     }
 
+    .tera-grid{
+        grid-template-columns:repeat(4, minmax(0,1fr));
+    }
+
     .type-grid{
         grid-template-columns:repeat(3,minmax(0,1fr));
     }
@@ -959,10 +1093,15 @@ button#searchButton:hover{
     }
 }
 
+@media (max-width:640px){
+    .tera-grid{
+        grid-template-columns:repeat(2, minmax(0,1fr));
+    }
+}
+
 @media (max-width:450px){
     .type-grid{
         grid-template-columns:1fr;
     }
 }
-
 

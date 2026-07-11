@@ -191,23 +191,15 @@ const types = [
     }
 ];
 
-const grid = document.getElementById("typeGrid");
 const suggestionBox = document.getElementById("suggestionBox");
 const input = document.getElementById("pokemonInput");
 const resultEl = document.getElementById("result");
 const searchButton = document.getElementById("searchButton");
 const themeToggle = document.getElementById("themeToggle");
-const referenceGrid = document.querySelector(".reference-grid");
-const panelHeader = document.getElementById("panelHeader");
-const panelTypeBadge = document.getElementById("panelTypeBadge");
-const panelInfo = document.getElementById("panelInfo");
-const panelHero = document.getElementById("panelHero");
-const panelTypeName = document.getElementById("panelTypeName");
-const panelTypeSummary = document.getElementById("panelTypeSummary");
-const panelOffensive = document.getElementById("panelOffensive");
-const panelDefensive = document.getElementById("panelDefensive");
-const panelOffensiveDescription = document.getElementById("panelOffensiveDescription");
-const panelDefensiveDescription = document.getElementById("panelDefensiveDescription");
+const pageContent = document.getElementById("pageContent");
+
+function el(id){ return document.getElementById(id); }
+function q(selector){ return document.querySelector(selector); }
 let selectedSuggestionIndex = -1;
 let activeType = null;
 
@@ -446,62 +438,57 @@ function renderEffectivenessBlock(title, items) {
 
 function setActiveType(type) {
     const sameType = activeType && activeType.name === type.name;
+    const referenceGrid = q('.reference-grid');
     if (sameType) {
         activeType = null;
-        referenceGrid.classList.remove("active");
+        if (referenceGrid) referenceGrid.classList.remove("active");
         document.querySelectorAll(".type-card").forEach(card => card.classList.remove("active"));
         return;
     }
 
     activeType = type;
-    referenceGrid.classList.add("active");
+    if (referenceGrid) referenceGrid.classList.add("active");
     document.querySelectorAll(".type-card").forEach(card => {
         card.classList.toggle("active", card.dataset.type === type.name.toLowerCase());
     });
 
-    panelHeader.style.setProperty("--panel-banner-color", type.bannerColor || type.color);
-    panelTypeBadge.style.setProperty("--panel-type-color", type.color);
-    panelTypeBadge.style.background = "transparent";
-    panelHero.querySelector("img").src = getTypeBannerUrl(type.name);
-    panelHero.querySelector("img").alt = `${type.name} banner`;
-    panelTypeBadge.innerHTML = `<img src="${getTypeIconUrl(type.name)}" alt="${type.name} icon">`;
-    panelTypeName.textContent = type.name;
-    panelTypeSummary.textContent = getTypeSummary(type);
-    panelDefensiveDescription.textContent = `How other types' attacks affect ${type.name}.`;
-    panelOffensiveDescription.textContent = `How ${type.name} type attacks affect others.`;
+    const panelHeader = el('panelHeader');
+    const panelTypeBadge = el('panelTypeBadge');
+    const panelHero = el('panelHero');
+    const panelTypeName = el('panelTypeName');
+    const panelTypeSummary = el('panelTypeSummary');
+    const panelOffensive = el('panelOffensive');
+    const panelDefensive = el('panelDefensive');
+    const panelOffensiveDescription = el('panelOffensiveDescription');
+    const panelDefensiveDescription = el('panelDefensiveDescription');
+
+    if (panelHeader) panelHeader.style.setProperty("--panel-banner-color", type.bannerColor || type.color);
+    if (panelTypeBadge) panelTypeBadge.style.setProperty("--panel-type-color", type.color);
+    if (panelTypeBadge) panelTypeBadge.style.background = "transparent";
+    if (panelHero) {
+        const img = panelHero.querySelector("img");
+        if (img) { img.src = getTypeBannerUrl(type.name); img.alt = `${type.name} banner`; }
+    }
+    if (panelTypeBadge) panelTypeBadge.innerHTML = `<img src="${getTypeIconUrl(type.name)}" alt="${type.name} icon">`;
+    if (panelTypeName) panelTypeName.textContent = type.name;
+    if (panelTypeSummary) panelTypeSummary.textContent = getTypeSummary(type);
+    if (panelDefensiveDescription) panelDefensiveDescription.textContent = `How other types' attacks affect ${type.name}.`;
+    if (panelOffensiveDescription) panelOffensiveDescription.textContent = `How ${type.name} type attacks affect others.`;
 
     const offensiveBlocks = [
-        {
-            title: "Super Effective",
-            items: type.strong
-        },
-        {
-            title: "Not Very Effective",
-            items: type.weakAttack
-        },
-        {
-            title: "No Effect",
-            items: type.noEffect
-        }
+        { title: "Super Effective", items: type.strong },
+        { title: "Not Very Effective", items: type.weakAttack },
+        { title: "No Effect", items: type.noEffect }
     ];
 
     const defensiveBlocks = [
-        {
-            title: "Weak To",
-            items: type.weak
-        },
-        {
-            title: "Resistant",
-            items: type.resist
-        },
-        {
-            title: "Immune",
-            items: type.immune
-        }
+        { title: "Weak To", items: type.weak },
+        { title: "Resistant", items: type.resist },
+        { title: "Immune", items: type.immune }
     ];
 
-    panelOffensive.innerHTML = offensiveBlocks.map(block => renderEffectivenessBlock(block.title, block.items)).join("");
-    panelDefensive.innerHTML = defensiveBlocks.map(block => renderEffectivenessBlock(block.title, block.items)).join("");
+    if (panelOffensive) panelOffensive.innerHTML = offensiveBlocks.map(block => renderEffectivenessBlock(block.title, block.items)).join("");
+    if (panelDefensive) panelDefensive.innerHTML = defensiveBlocks.map(block => renderEffectivenessBlock(block.title, block.items)).join("");
 }
 
 function highlightTypeCards(typeNames) {
@@ -513,6 +500,9 @@ function highlightTypeCards(typeNames) {
 }
 
 function renderTypeCards() {
+    const gridEl = el('typeGrid');
+    if (!gridEl) return;
+    gridEl.innerHTML = "";
     types.forEach(type => {
         const card = document.createElement("div");
         card.className = "type-card";
@@ -528,7 +518,7 @@ function renderTypeCards() {
             setActiveType(type);
         });
 
-        grid.appendChild(card);
+        gridEl.appendChild(card);
     });
 }
 
@@ -766,6 +756,193 @@ suggestionBox.addEventListener("click", event => {
     searchPokemon();
 });
 
+// --- SPA renderer & router -------------------------------------------------
+function renderHomePage(){
+    if (!pageContent) return;
+    pageContent.innerHTML = `
+        <section class="home-page">
+            <h2>Welcome</h2>
+            <p style="color:var(--muted);">Use the search above to look up Pokémon, or navigate to the other tools.</p>
+        </section>
+    `;
+}
+
+function renderPokemonPage(){
+    if (!pageContent) return;
+    pageContent.innerHTML = `
+        <section class="pokemon-page">
+            <h2>Pokémon</h2>
+            <p style="color:var(--muted);">Search for a Pokémon using the search bar above. Results will appear in the Pokémon panel.</p>
+        </section>
+    `;
+}
+
+function renderTeraCrystalPage(){
+    if (!pageContent) return;
+    pageContent.innerHTML = `
+        <section class="tera-page">
+            <div class="tera-intro"><h2>Tera Crystals</h2><p style="color:var(--muted)">Tera Crystals allow Pokémon to change their type when Terastallized. Click any card to view the type reference.</p></div>
+            <div id="teraGrid" class="tera-grid"></div>
+        </section>
+    `;
+    const gridEl = el('teraGrid');
+    // Build tera crystals array dynamically from `types` (name, color, icon, image)
+    function getTeraImageUrl(name){
+        const key = name.toLowerCase();
+        return `Images/tera/tera-${key}.png`;
+    }
+
+    const teraCrystals = types.map(t => ({
+        name: t.name,
+        color: t.color || '#777',
+        icon: getTypeIconUrl(t.name),
+        image: getTeraImageUrl(t.name)
+    }));
+
+    gridEl.innerHTML = '';
+    teraCrystals.forEach(entry => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tera-card';
+        btn.dataset.type = entry.name.toLowerCase();
+
+        const header = document.createElement('div');
+        header.className = 'tera-card-header';
+        btn.style.setProperty('--accent', entry.color);
+        const iconWrap = document.createElement('div');
+        iconWrap.className = 'tera-icon-wrap';
+        const icon = document.createElement('img');
+        icon.className = 'tera-card-icon';
+        icon.src = entry.icon;
+        icon.alt = `${entry.name} icon`;
+        iconWrap.appendChild(icon);
+        header.appendChild(iconWrap);
+
+        const artWrap = document.createElement('div');
+        artWrap.className = 'tera-card-art';
+        const art = document.createElement('img');
+        art.src = entry.image;
+        art.alt = `${entry.name} Tera Crystal`;
+        art.loading = 'lazy';
+        art.onerror = () => { art.src = getTypeBannerUrl(entry.name); art.style.opacity = '0.35'; };
+        artWrap.appendChild(art);
+
+        const footer = document.createElement('div');
+        footer.className = 'tera-card-footer';
+        // footer/header backgrounds are driven by CSS var --accent
+        const label = document.createElement('div');
+        label.className = 'tera-card-label';
+        label.textContent = entry.name.toUpperCase();
+        footer.appendChild(label);
+
+        btn.appendChild(header);
+        btn.appendChild(artWrap);
+        btn.appendChild(footer);
+
+        btn.addEventListener('click', () => {
+            const targetType = types.find(t => t.name.toLowerCase() === entry.name.toLowerCase());
+            if (targetType) { setActivePage('reference'); setActiveType(targetType); }
+        });
+
+        gridEl.appendChild(btn);
+    });
+}
+
+function renderTypeReferencePage(){
+    if (!pageContent) return;
+    pageContent.innerHTML = `
+        <section class="reference-section">
+            <div class="section-header">
+                <div class="reference-heading">
+                    <img class="reference-title-icon" src="Images/pokeball.png" alt="Pokéball">
+                    <div>
+                        <h2>Type Reference</h2>
+                        <p>Explore strengths, weaknesses, and interactions for every type.</p>
+                    </div>
+                </div>
+                <div class="reference-meta">Click any type to view details</div>
+            </div>
+            <div class="reference-grid">
+                <div class="type-list">
+                    <div class="type-list-title">All Types</div>
+                    <div id="typeGrid" class="type-grid"></div>
+                    <div class="type-tip">Tip: Damage multipliers are shown from the attacker’s type vs. the defender’s type.</div>
+                </div>
+                <div class="type-panel" id="typePanel">
+                    <div class="type-panel-header" id="panelHeader">
+                        <div class="panel-badge" id="panelTypeBadge"></div>
+                        <div class="panel-info" id="panelInfo">
+                            <div class="panel-info-inner">
+                                <h3 id="panelTypeName">Normal</h3>
+                                <p id="panelTypeSummary">Balanced and versatile. No special strengths, but few weaknesses.</p>
+                            </div>
+                        </div>
+                        <div class="panel-hero" id="panelHero">
+                            <img src="Images/Banners/normal-banner.png" alt="Normal banner">
+                        </div>
+                    </div>
+                    <div class="type-panel-grid">
+                        <div class="panel-card">
+                            <h4>Defensive Effectiveness</h4>
+                            <p id="panelDefensiveDescription" class="panel-description">How other types attack affect a type.</p>
+                            <div id="panelDefensive" class="effectiveness-grid"></div>
+                        </div>
+                        <div class="panel-card">
+                            <h4>Offensive Effectiveness</h4>
+                            <p id="panelOffensiveDescription" class="panel-description">How a type's attacks affect others.</p>
+                            <div id="panelOffensive" class="effectiveness-grid"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    `;
+    renderTypeCards();
+}
+
+function renderTypeMatchupsPage(){
+    if (!pageContent) return;
+    pageContent.innerHTML = `
+        <section class="matchups-page">
+            <h2>Type Matchups</h2>
+            <p style="color:var(--muted);">Visual matchups and charts coming here.</p>
+        </section>
+    `;
+}
+
+function renderGuidePage(){
+    if (!pageContent) return;
+    pageContent.innerHTML = `
+        <section class="guides-page">
+            <h2>Guides</h2>
+            <p style="color:var(--muted);">Guides and resources will appear here.</p>
+        </section>
+    `;
+}
+
+function setActivePage(page){
+    const navButtons = Array.from(document.querySelectorAll('.main-nav .nav-item'));
+    navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.page === page));
+    switch(page){
+        case 'home': renderHomePage(); break;
+        case 'pokemon': renderPokemonPage(); break;
+        case 'tera': renderTeraCrystalPage(); break;
+        case 'matchups': renderTypeMatchupsPage(); break;
+        case 'reference': renderTypeReferencePage(); break;
+        case 'guides': renderGuidePage(); break;
+        default: renderHomePage();
+    }
+}
+
+// hook up nav
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.main-nav .nav-item');
+    if (!btn) return;
+    const page = btn.dataset.page;
+    if (page) setActivePage(page);
+});
+
+// initialize app
 loadTheme();
 loadPokemonList();
-renderTypeCards();
+setActivePage('reference');
