@@ -204,6 +204,15 @@ button#searchButton:hover{
     margin-top:8px;
 }
 
+.build-tag{
+    margin-top:18px;
+    text-align:right;
+    color:var(--muted);
+    font-size:0.82rem;
+    letter-spacing:.04em;
+    opacity:.9;
+}
+
 /* Tera Crystals gallery */
 .tera-grid{
     display:grid;
