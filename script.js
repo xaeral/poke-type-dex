@@ -250,6 +250,451 @@ const typeColorMap = types.reduce((map, type) => {
     return map;
 }, {});
 
+const objectiveCategoryMeta = {
+    Gym: { color: "#4ea1ff", icon: "G", shortLabel: "Gym" },
+    Titan: { color: "#ff9f43", icon: "T", shortLabel: "Titan" },
+    "Team Star": { color: "#a875ff", icon: "S", shortLabel: "Team Star" }
+};
+
+// Paldea image includes ocean margins. Remap objective coordinates into the land area.
+const adventureMapBounds = {
+    left: 10,
+    right: 90,
+    top: 10,
+    bottom: 95
+};
+
+const adventureGuide = [
+    {
+        id: 1,
+        name: "Cortondo Gym",
+        category: "Gym",
+        type: "Bug",
+        level: "14-15",
+        location: "Cortondo",
+        leader: "Katy",
+        description: "Take on Katy and her Bug-type team to earn your first Gym Badge.",
+        mapX: 21,
+        mapY: 71,
+        heroImage: "./Images/adventure/cortondo-gym.png",
+        weaknesses: ["Fire", "Flying", "Rock"],
+        resistances: ["Grass", "Fighting", "Ground"],
+        immunities: [],
+        team: [
+            { pokemon: "Nymble", level: 14 },
+            { pokemon: "Tarountula", level: 14 },
+            { pokemon: "Teddiursa", level: 15 }
+        ]
+    },
+    {
+        id: 2,
+        name: "Stony Cliff Titan",
+        category: "Titan",
+        type: "Rock",
+        level: "16",
+        location: "South Province (Area Three)",
+        leader: "Klawf Titan",
+        description: "Track down the giant Klawf and battle it to secure the first Herba Mystica path objective.",
+        mapX: 32,
+        mapY: 66,
+        heroImage: "./Images/adventure/stony-cliff-titan.png",
+        weaknesses: ["Water", "Grass", "Fighting", "Ground", "Steel"],
+        resistances: ["Normal", "Fire", "Poison", "Flying"],
+        immunities: [],
+        team: [
+            { pokemon: "Klawf", level: 16 }
+        ]
+    },
+    {
+        id: 3,
+        name: "Artazon Gym",
+        category: "Gym",
+        type: "Grass",
+        level: "16-18",
+        location: "Artazon",
+        leader: "Brassius",
+        description: "Defeat Brassius and his artistic Grass-type lineup in East Province.",
+        mapX: 46,
+        mapY: 62,
+        heroImage: "./Images/adventure/artazon-gym.png",
+        weaknesses: ["Fire", "Ice", "Poison", "Flying", "Bug"],
+        resistances: ["Water", "Electric", "Grass", "Ground"],
+        immunities: [],
+        team: [
+            { pokemon: "Petilil", level: 16 },
+            { pokemon: "Smoliv", level: 16 },
+            { pokemon: "Sudowoodo", level: 17 }
+        ]
+    },
+    {
+        id: 4,
+        name: "Open Sky Titan",
+        category: "Titan",
+        type: "Flying",
+        level: "19",
+        location: "West Province (Area One)",
+        leader: "Bombirdier Titan",
+        description: "Battle Bombirdier in the cliffs and continue the Path of Legends storyline.",
+        mapX: 15,
+        mapY: 46,
+        heroImage: "./Images/adventure/open-sky-titan.png",
+        weaknesses: ["Electric", "Ice", "Rock"],
+        resistances: ["Grass", "Fighting", "Bug"],
+        immunities: ["Ground"],
+        team: [
+            { pokemon: "Bombirdier", level: 19 }
+        ]
+    },
+    {
+        id: 5,
+        name: "Team Star Dark Crew",
+        category: "Team Star",
+        type: "Dark",
+        level: "20-21",
+        location: "West Province (Area One)",
+        leader: "Giacomo",
+        description: "Infiltrate the Dark Crew base and challenge Giacomo's Segin Starmobile.",
+        mapX: 27,
+        mapY: 50,
+        heroImage: "./Images/adventure/team-star-dark-crew.png",
+        weaknesses: ["Fighting", "Bug", "Fairy"],
+        resistances: ["Ghost", "Dark"],
+        immunities: ["Psychic"],
+        team: [
+            { pokemon: "Pawniard", level: 21 },
+            { pokemon: "Segin Starmobile", level: 20 }
+        ]
+    },
+    {
+        id: 6,
+        name: "Levincia Gym",
+        category: "Gym",
+        type: "Electric",
+        level: "23-24",
+        location: "Levincia",
+        leader: "Iono",
+        description: "Face streamer Gym Leader Iono for your next badge in Levincia.",
+        mapX: 70,
+        mapY: 62,
+        heroImage: "./Images/adventure/levincia-gym.png",
+        weaknesses: ["Ground"],
+        resistances: ["Electric", "Flying", "Steel"],
+        immunities: [],
+        team: [
+            { pokemon: "Wattrel", level: 23 },
+            { pokemon: "Bellibolt", level: 23 },
+            { pokemon: "Luxio", level: 23 },
+            { pokemon: "Mismagius", level: 24 }
+        ]
+    },
+    {
+        id: 7,
+        name: "Team Star Fire Crew",
+        category: "Team Star",
+        type: "Fire",
+        level: "26-27",
+        location: "East Province (Area One)",
+        leader: "Mela",
+        description: "Defeat Mela and the Schedar Starmobile in Team Star's Fire base.",
+        mapX: 62,
+        mapY: 73,
+        heroImage: "./Images/adventure/team-star-fire-crew.png",
+        weaknesses: ["Water", "Ground", "Rock"],
+        resistances: ["Fire", "Grass", "Ice", "Bug", "Steel", "Fairy"],
+        immunities: [],
+        team: [
+            { pokemon: "Torkoal", level: 27 },
+            { pokemon: "Schedar Starmobile", level: 26 }
+        ]
+    },
+    {
+        id: 8,
+        name: "Lurking Steel Titan",
+        category: "Titan",
+        type: "Steel",
+        level: "28",
+        location: "East Province (Area Three)",
+        leader: "Orthworm Titan",
+        description: "Chase Orthworm through rocky tunnels to claim another Herba Mystica.",
+        mapX: 73,
+        mapY: 44,
+        heroImage: "./Images/adventure/lurking-steel-titan.png",
+        weaknesses: ["Fire", "Fighting", "Ground"],
+        resistances: ["Normal", "Grass", "Ice", "Flying", "Psychic", "Bug", "Rock", "Dragon", "Steel", "Fairy"],
+        immunities: ["Poison"],
+        team: [
+            { pokemon: "Orthworm", level: 28 }
+        ]
+    },
+    {
+        id: 9,
+        name: "Cascarrafa Gym",
+        category: "Gym",
+        type: "Water",
+        level: "29-30",
+        location: "Cascarrafa",
+        leader: "Kofu",
+        description: "Take on Kofu's Water-types in the bustling market city of Cascarrafa.",
+        mapX: 24,
+        mapY: 53,
+        heroImage: "./Images/adventure/cascarrafa-gym.png",
+        weaknesses: ["Electric", "Grass"],
+        resistances: ["Fire", "Water", "Ice", "Steel"],
+        immunities: [],
+        team: [
+            { pokemon: "Veluza", level: 29 },
+            { pokemon: "Wugtrio", level: 29 },
+            { pokemon: "Crabominable", level: 30 }
+        ]
+    },
+    {
+        id: 10,
+        name: "Team Star Poison Crew",
+        category: "Team Star",
+        type: "Poison",
+        level: "32-33",
+        location: "Tagtree Thicket",
+        leader: "Atticus",
+        description: "Break through the Poison Crew defenses and battle Atticus.",
+        mapX: 55,
+        mapY: 52,
+        heroImage: "./Images/adventure/team-star-poison-crew.png",
+        weaknesses: ["Ground", "Psychic"],
+        resistances: ["Grass", "Fighting", "Poison", "Bug", "Fairy"],
+        immunities: [],
+        team: [
+            { pokemon: "Skuntank", level: 32 },
+            { pokemon: "Muk", level: 32 },
+            { pokemon: "Navi Starmobile", level: 33 }
+        ]
+    },
+    {
+        id: 11,
+        name: "Medali Gym",
+        category: "Gym",
+        type: "Normal",
+        level: "35-36",
+        location: "Medali",
+        leader: "Larry",
+        description: "Challenge Larry in Medali and secure your next Gym Badge.",
+        mapX: 37,
+        mapY: 44,
+        heroImage: "./Images/adventure/medali-gym.png",
+        weaknesses: ["Fighting"],
+        resistances: [],
+        immunities: ["Ghost"],
+        team: [
+            { pokemon: "Komala", level: 35 },
+            { pokemon: "Dudunsparce", level: 35 },
+            { pokemon: "Staraptor", level: 36 }
+        ]
+    },
+    {
+        id: 12,
+        name: "Montenevera Gym",
+        category: "Gym",
+        type: "Ghost",
+        level: "41-42",
+        location: "Montenevera",
+        leader: "Ryme",
+        description: "Take on Ryme's Ghost-type team in a double battle format.",
+        mapX: 49,
+        mapY: 20,
+        heroImage: "./Images/adventure/montenevera-gym.png",
+        weaknesses: ["Ghost", "Dark"],
+        resistances: ["Poison", "Bug"],
+        immunities: ["Normal", "Fighting"],
+        team: [
+            { pokemon: "Banette", level: 41 },
+            { pokemon: "Mimikyu", level: 41 },
+            { pokemon: "Houndstone", level: 42 },
+            { pokemon: "Toxtricity", level: 42 }
+        ]
+    },
+    {
+        id: 13,
+        name: "Alfornada Gym",
+        category: "Gym",
+        type: "Psychic",
+        level: "44-45",
+        location: "Alfornada",
+        leader: "Tulip",
+        description: "Win against Tulip's Psychic team in Alfornada's Gym test finale.",
+        mapX: 8,
+        mapY: 56,
+        heroImage: "./Images/adventure/alfornada-gym.png",
+        weaknesses: ["Bug", "Ghost", "Dark"],
+        resistances: ["Fighting", "Psychic"],
+        immunities: [],
+        team: [
+            { pokemon: "Farigiraf", level: 44 },
+            { pokemon: "Gardevoir", level: 44 },
+            { pokemon: "Espathra", level: 44 },
+            { pokemon: "Florges", level: 45 }
+        ]
+    },
+    {
+        id: 14,
+        name: "Quaking Earth Titan",
+        category: "Titan",
+        type: "Ground",
+        level: "44",
+        location: "Asado Desert",
+        leader: "Great Tusk / Iron Treads",
+        description: "Defeat the Quaking Earth Titan roaming the Asado Desert.",
+        mapX: 22,
+        mapY: 45,
+        heroImage: "./Images/adventure/quaking-earth-titan.png",
+        weaknesses: ["Water", "Grass", "Ice"],
+        resistances: ["Poison", "Rock"],
+        immunities: ["Electric"],
+        team: [
+            { pokemon: "Great Tusk", level: 44 }
+        ]
+    },
+    {
+        id: 15,
+        name: "Glaseado Gym",
+        category: "Gym",
+        type: "Ice",
+        level: "47-48",
+        location: "Glaseado Mountain",
+        leader: "Grusha",
+        description: "Climb the snowy mountain and battle Grusha for the Ice Badge.",
+        mapX: 66,
+        mapY: 17,
+        heroImage: "./Images/adventure/glaseado-gym.png",
+        weaknesses: ["Fire", "Fighting", "Rock", "Steel"],
+        resistances: ["Ice"],
+        immunities: [],
+        team: [
+            { pokemon: "Frosmoth", level: 47 },
+            { pokemon: "Beartic", level: 47 },
+            { pokemon: "Cetitan", level: 47 },
+            { pokemon: "Altaria", level: 48 }
+        ]
+    },
+    {
+        id: 16,
+        name: "Team Star Fairy Crew",
+        category: "Team Star",
+        type: "Fairy",
+        level: "50-51",
+        location: "North Province (Area Three)",
+        leader: "Ortega",
+        description: "Challenge Ortega's Fairy crew and stop the Ruchbah Starmobile.",
+        mapX: 79,
+        mapY: 28,
+        heroImage: "./Images/adventure/team-star-fairy-crew.png",
+        weaknesses: ["Poison", "Steel"],
+        resistances: ["Fighting", "Bug", "Dark"],
+        immunities: ["Dragon"],
+        team: [
+            { pokemon: "Azumarill", level: 50 },
+            { pokemon: "Wigglytuff", level: 50 },
+            { pokemon: "Dachsbun", level: 50 },
+            { pokemon: "Ruchbah Starmobile", level: 51 }
+        ]
+    },
+    {
+        id: 17,
+        name: "Team Star Fighting Crew",
+        category: "Team Star",
+        type: "Fighting",
+        level: "55-56",
+        location: "North Province (Area One)",
+        leader: "Eri",
+        description: "Take down Team Star's final stronghold with Eri and the Caph Starmobile.",
+        mapX: 57,
+        mapY: 25,
+        heroImage: "./Images/adventure/team-star-fighting-crew.png",
+        weaknesses: ["Flying", "Psychic", "Fairy"],
+        resistances: ["Bug", "Rock", "Dark"],
+        immunities: [],
+        team: [
+            { pokemon: "Toxicroak", level: 55 },
+            { pokemon: "Passimian", level: 55 },
+            { pokemon: "Lucario", level: 55 },
+            { pokemon: "Caph Starmobile", level: 56 }
+        ]
+    },
+    {
+        id: 18,
+        name: "False Dragon Titan",
+        category: "Titan",
+        type: "Dragon",
+        level: "55",
+        location: "Casseroya Lake",
+        leader: "Dondozo & Tatsugiri",
+        description: "Complete the final Titan objective at Casseroya Lake.",
+        mapX: 31,
+        mapY: 28,
+        heroImage: "./Images/adventure/false-dragon-titan.png",
+        weaknesses: ["Ice", "Dragon", "Fairy"],
+        resistances: ["Fire", "Water", "Electric", "Grass"],
+        immunities: [],
+        team: [
+            { pokemon: "Tatsugiri", level: 55 },
+            { pokemon: "Dondozo", level: 55 }
+        ]
+    }
+];
+
+let selectedAdventureObjectiveId = adventureGuide[0]?.id || null;
+let adventureResizeHandler = null;
+let adventureMapPositionState = null;
+let adventureDragState = null;
+let adventureSuppressMarkerClick = false;
+const adventureProgressStorageKey = "adventureGuideProgressV1";
+let adventureCompletedObjectiveIds = new Set();
+
+function loadAdventureProgress() {
+    try {
+        const stored = localStorage.getItem(adventureProgressStorageKey);
+        if (!stored) {
+            adventureCompletedObjectiveIds = new Set();
+            return;
+        }
+
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed)) {
+            adventureCompletedObjectiveIds = new Set();
+            return;
+        }
+
+        adventureCompletedObjectiveIds = new Set(parsed.map(value => Number(value)).filter(Number.isFinite));
+    } catch {
+        adventureCompletedObjectiveIds = new Set();
+    }
+}
+
+function saveAdventureProgress() {
+    try {
+        localStorage.setItem(adventureProgressStorageKey, JSON.stringify([...adventureCompletedObjectiveIds]));
+    } catch {
+        // Ignore storage write failures.
+    }
+}
+
+function isAdventureObjectiveCompleted(id) {
+    return adventureCompletedObjectiveIds.has(Number(id));
+}
+
+function setAdventureObjectiveCompleted(id, completed) {
+    const numericId = Number(id);
+    if (!Number.isFinite(numericId)) return;
+
+    if (completed) adventureCompletedObjectiveIds.add(numericId);
+    else adventureCompletedObjectiveIds.delete(numericId);
+    saveAdventureProgress();
+
+    const card = document.querySelector(`.adventure-objective-card[data-objective-id="${numericId}"]`);
+    if (card) card.classList.toggle("completed", completed);
+
+    const marker = document.querySelector(`.adventure-marker[data-objective-id="${numericId}"]`);
+    if (marker) marker.classList.toggle("completed", completed);
+}
+
 function getTypeIconUrl(name) {
     const key = name.toLowerCase();
     return `./Images/${typeIconMap[key] || key}.svg`;
@@ -530,7 +975,7 @@ function setTheme(theme) {
 }
 
 function loadTheme() {
-    const saved = localStorage.getItem("pokemonTheme") || "light";
+    const saved = localStorage.getItem("pokemonTheme") || "dark";
     setTheme(saved);
 }
 
@@ -866,7 +1311,6 @@ function renderTypeReferencePage(){
                 <div class="type-list">
                     <div class="type-list-title">All Types</div>
                     <div id="typeGrid" class="type-grid"></div>
-                    <div class="type-tip">Tip: Damage multipliers are shown from the attacker’s type vs. the defender’s type.</div>
                 </div>
                 <div class="type-panel" id="typePanel">
                     <div class="type-panel-header" id="panelHeader">
@@ -920,6 +1364,390 @@ function renderGuidePage(){
     `;
 }
 
+function getAdventureCategoryMeta(category) {
+    return objectiveCategoryMeta[category] || objectiveCategoryMeta.Gym;
+}
+
+function getAdventureObjectiveById(id) {
+    return adventureGuide.find(objective => objective.id === id) || adventureGuide[0];
+}
+
+function getAdventureRoleLabel(category) {
+    if (category === "Gym") return "Gym Leader";
+    if (category === "Titan") return "Titan";
+    return "Boss";
+}
+
+function getAdventureMarkerPosition(objective) {
+    const mapX = Number(objective?.mapX ?? 0);
+    const mapY = Number(objective?.mapY ?? 0);
+    const x = adventureMapBounds.left + ((mapX / 100) * (adventureMapBounds.right - adventureMapBounds.left));
+    const y = adventureMapBounds.top + ((mapY / 100) * (adventureMapBounds.bottom - adventureMapBounds.top));
+    return {
+        xPercent: Math.max(0, Math.min(100, x)),
+        yPercent: Math.max(0, Math.min(100, y))
+    };
+}
+
+function renderAdventureList() {
+    const listEl = el("adventureObjectiveList");
+    if (!listEl) return;
+
+    listEl.innerHTML = adventureGuide.map(objective => {
+        const meta = getAdventureCategoryMeta(objective.category);
+        const isSelected = objective.id === selectedAdventureObjectiveId;
+        const isCompleted = isAdventureObjectiveCompleted(objective.id);
+        return `
+            <article
+                class="adventure-objective-card ${isSelected ? "selected" : ""} ${isCompleted ? "completed" : ""}"
+                data-objective-id="${objective.id}"
+                style="--objective-accent:${meta.color}">
+                <div class="adventure-objective-order">${objective.id}</div>
+                <div class="adventure-objective-content">
+                    <div class="adventure-objective-name">${escapeHtml(objective.name)}</div>
+                    <div class="adventure-objective-subline">
+                        <span class="adventure-category-icon">${meta.icon}</span>
+                        <span>${escapeHtml(objective.type)} ${escapeHtml(meta.shortLabel)}</span>
+                    </div>
+                    <div class="adventure-objective-level">Lv.${escapeHtml(objective.level)}</div>
+                </div>
+                <label class="adventure-progress-toggle" title="Mark objective complete">
+                    <input
+                        type="checkbox"
+                        class="adventure-progress-checkbox"
+                        data-objective-id="${objective.id}"
+                        ${isCompleted ? "checked" : ""}
+                        aria-label="Mark ${escapeHtml(objective.name)} complete">
+                    <span class="adventure-progress-checkmark" aria-hidden="true"></span>
+                </label>
+            </article>
+        `;
+    }).join("");
+}
+
+function panAdventureMapTo(objective) {
+    const viewport = el("adventureMapViewport");
+    const inner = el("adventureMapInner");
+    if (!viewport || !inner || !objective) return null;
+
+    const viewportRect = viewport.getBoundingClientRect();
+    const innerWidth = inner.offsetWidth;
+    const innerHeight = inner.offsetHeight;
+    const markerPosition = getAdventureMarkerPosition(objective);
+    const markerX = (markerPosition.xPercent / 100) * innerWidth;
+    const markerY = (markerPosition.yPercent / 100) * innerHeight;
+
+    const rawX = (viewportRect.width / 2) - markerX;
+    const rawY = (viewportRect.height / 2) - markerY;
+    return applyAdventureMapTransform(rawX, rawY);
+}
+
+function applyAdventureMapTransform(translateX, translateY) {
+    const viewport = el("adventureMapViewport");
+    const inner = el("adventureMapInner");
+    if (!viewport || !inner) return null;
+
+    const viewportRect = viewport.getBoundingClientRect();
+    const innerWidth = inner.offsetWidth;
+    const innerHeight = inner.offsetHeight;
+
+    const minX = viewportRect.width - innerWidth;
+    const minY = viewportRect.height - innerHeight;
+
+    const clampedX = Math.min(0, Math.max(minX, translateX));
+    const clampedY = Math.min(0, Math.max(minY, translateY));
+    inner.style.transform = `translate(${clampedX}px, ${clampedY}px)`;
+
+    adventureMapPositionState = {
+        translateX: clampedX,
+        translateY: clampedY,
+        innerWidth,
+        innerHeight
+    };
+
+    return adventureMapPositionState;
+}
+
+function renderAdventureMap() {
+    const mapInner = el("adventureMapInner");
+    if (!mapInner) return;
+
+    mapInner.innerHTML = `
+        <img class="adventure-map-base" src="./Images/adventure/paldea.jpg" alt="Paldea map" loading="lazy" draggable="false" onerror="this.onerror=null;this.src='./Images/maps/paldea-map.png'">
+        <div class="adventure-map-watermark">PALDEA</div>
+        ${adventureGuide.map(objective => {
+            const meta = getAdventureCategoryMeta(objective.category);
+            const isSelected = objective.id === selectedAdventureObjectiveId;
+            const isCompleted = isAdventureObjectiveCompleted(objective.id);
+            const markerPosition = getAdventureMarkerPosition(objective);
+            const typeIconUrl = getTypeIconUrl(objective.type);
+            return `
+                <button
+                    type="button"
+                    class="adventure-marker ${isSelected ? "selected" : ""} ${isCompleted ? "completed" : ""}"
+                    data-objective-id="${objective.id}"
+                    style="left:${markerPosition.xPercent}%;top:${markerPosition.yPercent}%;--marker-color:${meta.color}"
+                    title="${escapeHtml(objective.name)}">
+                    <span class="adventure-marker-dot">
+                        <img class="adventure-marker-icon" src="${typeIconUrl}" alt="${escapeHtml(objective.type)} type icon">
+                    </span>
+                </button>
+            `;
+        }).join("")}
+    `;
+
+    if (!selectedAdventureObjectiveId) {
+        renderAdventureMapPopout(null, null);
+        return;
+    }
+
+    const selectedObjective = getAdventureObjectiveById(selectedAdventureObjectiveId);
+    const mapState = panAdventureMapTo(selectedObjective);
+    renderAdventureMapPopout(selectedObjective, mapState);
+}
+
+function renderAdventureMapPopout(objective, mapState) {
+    const overlay = el("adventureMapOverlay");
+    const viewport = el("adventureMapViewport");
+    if (!overlay || !viewport) return;
+
+    if (!objective) {
+        overlay.innerHTML = "";
+        return;
+    }
+
+    const meta = getAdventureCategoryMeta(objective.category);
+
+    overlay.innerHTML = `
+        <article class="adventure-marker-popout" style="--objective-accent:${meta.color}">
+            <h3 class="adventure-marker-popout-title">${escapeHtml(objective.name)}</h3>
+            <div class="adventure-marker-popout-badges">
+                <span class="badge-tag">${escapeHtml(objective.category)}</span>
+                <span class="badge-tag">${escapeHtml(objective.type)}</span>
+                <span class="badge-tag">Lv.${escapeHtml(objective.level)}</span>
+            </div>
+            <div class="adventure-marker-popout-weaknesses">
+                <h4>Weak Against</h4>
+                <div class="adventure-type-badge-row">${renderAdventureTypeBadges(objective.weaknesses)}</div>
+            </div>
+        </article>
+    `;
+
+    const popout = overlay.querySelector(".adventure-marker-popout");
+    if (!popout) return;
+
+    const resolvedState = mapState || adventureMapPositionState;
+    if (!resolvedState) return;
+
+    const viewportRect = viewport.getBoundingClientRect();
+    const markerPosition = getAdventureMarkerPosition(objective);
+    const left = resolvedState.translateX + ((markerPosition.xPercent / 100) * resolvedState.innerWidth);
+    const top = resolvedState.translateY + ((markerPosition.yPercent / 100) * resolvedState.innerHeight);
+
+    popout.style.left = `${left}px`;
+    popout.style.top = `${top}px`;
+
+    // Flip below marker if there is not enough room above.
+    const popoutRect = popout.getBoundingClientRect();
+    if (popoutRect.top < viewportRect.top + 8) {
+        popout.classList.add("below");
+    }
+
+    const markerVisible = left >= 0 && left <= viewportRect.width && top >= 0 && top <= viewportRect.height;
+    popout.classList.toggle("is-hidden", !markerVisible);
+}
+
+function renderAdventureTypeBadges(typeList) {
+    if (!typeList || !typeList.length) {
+        return `<span class="adventure-type-badge empty">None</span>`;
+    }
+
+    return typeList.map(type => `
+        <span class="adventure-type-badge">
+            <img src="${getTypeIconUrl(type)}" alt="${escapeHtml(type)} icon">
+            <span>${escapeHtml(type)}</span>
+        </span>
+    `).join("");
+}
+
+function setupAdventureMapDragging() {
+    const viewport = el("adventureMapViewport");
+    const inner = el("adventureMapInner");
+    if (!viewport || !inner) return;
+
+    const onPointerDown = (event) => {
+        if (event.button !== undefined && event.button !== 0) return;
+
+        const current = adventureMapPositionState || applyAdventureMapTransform(0, 0);
+        if (!current) return;
+
+        adventureDragState = {
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            baseX: current.translateX,
+            baseY: current.translateY,
+            dragged: false,
+            captured: false
+        };
+    };
+
+    const onPointerMove = (event) => {
+        if (!adventureDragState || event.pointerId !== adventureDragState.pointerId) return;
+
+        const deltaX = event.clientX - adventureDragState.startX;
+        const deltaY = event.clientY - adventureDragState.startY;
+
+        if (!adventureDragState.dragged && (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3)) {
+            adventureDragState.dragged = true;
+            if (!adventureDragState.captured) {
+                adventureDragState.captured = true;
+                inner.style.transition = "none";
+                viewport.classList.add("dragging");
+                viewport.setPointerCapture(event.pointerId);
+            }
+        }
+
+        if (!adventureDragState.dragged) return;
+
+        const nextState = applyAdventureMapTransform(adventureDragState.baseX + deltaX, adventureDragState.baseY + deltaY);
+        if (nextState) {
+            const objective = getAdventureObjectiveById(selectedAdventureObjectiveId);
+            renderAdventureMapPopout(objective, nextState);
+        }
+    };
+
+    const finishDrag = (event) => {
+        if (!adventureDragState || event.pointerId !== adventureDragState.pointerId) return;
+
+        if (adventureDragState.dragged) {
+            adventureSuppressMarkerClick = true;
+            setTimeout(() => { adventureSuppressMarkerClick = false; }, 0);
+        }
+
+        viewport.classList.remove("dragging");
+        inner.style.transition = "";
+        adventureDragState = null;
+
+        if (event.pointerId !== undefined && viewport.hasPointerCapture(event.pointerId)) {
+            viewport.releasePointerCapture(event.pointerId);
+        }
+    };
+
+    viewport.addEventListener("pointerdown", onPointerDown);
+    viewport.addEventListener("pointermove", onPointerMove);
+    viewport.addEventListener("pointerup", finishDrag);
+    viewport.addEventListener("pointercancel", finishDrag);
+    viewport.addEventListener("dragstart", event => event.preventDefault());
+}
+
+function updateAdventureSelection(id) {
+    if (!id) {
+        selectedAdventureObjectiveId = null;
+        document.querySelectorAll(".adventure-objective-card").forEach(card => card.classList.remove("selected"));
+        document.querySelectorAll(".adventure-marker").forEach(marker => marker.classList.remove("selected"));
+        renderAdventureMapPopout(null, null);
+        return;
+    }
+
+    const objective = getAdventureObjectiveById(id);
+    selectedAdventureObjectiveId = objective.id;
+
+    document.querySelectorAll(".adventure-objective-card").forEach(card => {
+        const cardId = Number(card.dataset.objectiveId);
+        card.classList.toggle("selected", cardId === selectedAdventureObjectiveId);
+    });
+
+    document.querySelectorAll(".adventure-marker").forEach(marker => {
+        const markerId = Number(marker.dataset.objectiveId);
+        marker.classList.toggle("selected", markerId === selectedAdventureObjectiveId);
+    });
+
+    renderAdventureMap();
+
+    const selectedCard = document.querySelector(`.adventure-objective-card[data-objective-id="${objective.id}"]`);
+    if (selectedCard) {
+        selectedCard.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+}
+
+function renderAdventureGuidePage() {
+    if (!pageContent) return;
+
+    pageContent.innerHTML = `
+        <section class="adventure-page">
+            <header class="adventure-header">
+                <h2>Adventure Guide</h2>
+                <p>Follow the recommended order for completing Pokemon Scarlet & Violet. Select any objective to view its location, recommended level and battle information.</p>
+            </header>
+
+            <div class="adventure-layout">
+                <aside class="adventure-column adventure-list-column">
+                    <div id="adventureObjectiveList" class="adventure-objective-list"></div>
+                </aside>
+
+                <section class="adventure-column adventure-map-column">
+                    <div id="adventureMapViewport" class="adventure-map-viewport">
+                        <div id="adventureMapInner" class="adventure-map-inner"></div>
+                    </div>
+                    <div id="adventureMapOverlay" class="adventure-map-overlay"></div>
+                </section>
+            </div>
+        </section>
+    `;
+
+    selectedAdventureObjectiveId = getAdventureObjectiveById(selectedAdventureObjectiveId)?.id || adventureGuide[0].id;
+    renderAdventureList();
+    renderAdventureMap();
+
+    const objectiveList = el("adventureObjectiveList");
+    const mapInner = el("adventureMapInner");
+
+    if (objectiveList) {
+        objectiveList.addEventListener("change", event => {
+            const checkbox = event.target.closest(".adventure-progress-checkbox");
+            if (!checkbox) return;
+            setAdventureObjectiveCompleted(Number(checkbox.dataset.objectiveId), checkbox.checked);
+        });
+
+        objectiveList.addEventListener("click", event => {
+            if (event.target.closest(".adventure-progress-toggle")) return;
+            const card = event.target.closest(".adventure-objective-card");
+            if (!card) return;
+            updateAdventureSelection(Number(card.dataset.objectiveId));
+        });
+    }
+
+    if (mapInner) {
+        mapInner.addEventListener("click", event => {
+            if (adventureSuppressMarkerClick) return;
+            const marker = event.target.closest(".adventure-marker");
+            if (!marker) {
+                updateAdventureSelection(null);
+                return;
+            }
+            updateAdventureSelection(Number(marker.dataset.objectiveId));
+        });
+    }
+
+    setupAdventureMapDragging();
+
+    if (adventureResizeHandler) {
+        window.removeEventListener("resize", adventureResizeHandler);
+    }
+    adventureResizeHandler = () => {
+        const objective = getAdventureObjectiveById(selectedAdventureObjectiveId);
+        const mapState = panAdventureMapTo(objective);
+        renderAdventureMapPopout(objective, mapState);
+    };
+    window.addEventListener("resize", adventureResizeHandler);
+
+    window.requestAnimationFrame(() => {
+        const objective = getAdventureObjectiveById(selectedAdventureObjectiveId);
+        panAdventureMapTo(objective);
+    });
+}
+
 function setActivePage(page){
     const navButtons = Array.from(document.querySelectorAll('.main-nav .nav-item'));
     navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.page === page));
@@ -927,6 +1755,7 @@ function setActivePage(page){
         case 'home': renderHomePage(); break;
         case 'pokemon': renderPokemonPage(); break;
         case 'tera': renderTeraCrystalPage(); break;
+        case 'adventure': renderAdventureGuidePage(); break;
         case 'matchups': renderTypeMatchupsPage(); break;
         case 'reference': renderTypeReferencePage(); break;
         case 'guides': renderGuidePage(); break;
@@ -944,5 +1773,6 @@ document.addEventListener('click', (e) => {
 
 // initialize app
 loadTheme();
+loadAdventureProgress();
 loadPokemonList();
 setActivePage('reference');
