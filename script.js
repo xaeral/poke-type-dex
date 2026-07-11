@@ -1774,5 +1774,7 @@ document.addEventListener('click', (e) => {
 // initialize app
 loadTheme();
 loadAdventureProgress();
-loadPokemonList();
+loadPokemonList().catch(() => {
+    // Keep core app pages usable even if remote API is unavailable.
+});
 setActivePage('reference');
