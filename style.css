@@ -1226,13 +1226,6 @@ button#searchButton:hover{
 
 .adventure-map-column{
     position:relative;
-    height:100%;
-    min-height:620px;
-    background:
-        radial-gradient(circle at 20% 20%, rgba(130,191,255,.28), transparent 40%),
-        radial-gradient(circle at 70% 75%, rgba(154,115,255,.22), transparent 45%),
-        linear-gradient(165deg, #1a2740 0%, #132137 45%, #0f1a2b 100%);
-    overflow:hidden;
     cursor:grab;
     touch-action:none;
     user-select:none;
