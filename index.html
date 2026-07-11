@@ -3,48 +3,88 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pokemon Type Dex</title>
-
+<title>Pokémon Type Dex</title>
+<link rel="icon" type="image/png" href="Images/pokeball.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div class="toolbar">
+    <button id="themeToggle" type="button">Dark Mode</button>
+</div>
 
 <div class="container">
+    <header class="hero">
+        <h1>Pokémon Type Dex</h1>
+        <p>Search any Pokémon, explore weaknesses, resistances, 4× and ¼× matchups, abilities, stats, and type interactions.</p>
+    </header>
 
-<h1>Pokémon Type Dex</h1>
+    <div class="search-panel">
+        <div class="search-field">
+            <input
+                id="pokemonInput"
+                placeholder="Search Pokémon..."
+                autocomplete="off"
+                aria-label="Search Pokémon">
+            <div id="suggestionBox" class="suggestions hidden"></div>
+        </div>
+        <button id="searchButton" type="button">Search</button>
+    </div>
 
-<div class="search">
+    <p class="hint">Live autocomplete with fuzzy search. Press Enter or click a suggestion.</p>
 
-    <input
-        id="pokemonInput"
-        list="pokemonList"
-        placeholder="Search Pokémon..."
-        autocomplete="off">
+    <section class="result-section">
+        <h2>Pokémon</h2>
+        <div id="result" class="result"></div>
+    </section>
 
-    <datalist id="pokemonList"></datalist>
+    <section class="reference-section">
+        <div class="section-header">
+            <div class="reference-heading">
+                <img class="reference-title-icon" src="Images/pokeball.png" alt="Pokéball">
+                <div>
+                    <h2>Type Reference</h2>
+                    <p>Explore strengths, weaknesses, and interactions for every type.</p>
+                </div>
+            </div>
+            <div class="reference-meta">Click any type to view details</div>
+        </div>
 
-    <button onclick="searchPokemon()">
-        Search
-    </button>
-
-
-</div>
-<div class="search">
-
-</div>
-
-<h2>Pokémon</h2>
-
-<div id="result"></div>
-
-
-<h2>Type Reference</h2>
-
-<div id="typeGrid"></div>
-
+        <div class="reference-grid">
+            <div class="type-list">
+                <div class="type-list-title">All Types</div>
+                <div id="typeGrid" class="type-grid"></div>
+                <div class="type-tip">Tip: Damage multipliers are shown from the attacker’s type vs. the defender’s type.</div>
+            </div>
+            <div class="type-panel" id="typePanel">
+                <div class="type-panel-header" id="panelHeader">
+                    <div class="panel-badge" id="panelTypeBadge"></div>
+                    <div class="panel-info" id="panelInfo">
+                        <div class="panel-info-inner">
+                            <h3 id="panelTypeName">Normal</h3>
+                            <p id="panelTypeSummary">Balanced and versatile. No special strengths, but few weaknesses.</p>
+                        </div>
+                    </div>
+                    <div class="panel-hero" id="panelHero">
+                        <img src="Images/Banners/normal-banner.png" alt="Normal banner">
+                    </div>
+                </div>
+                <div class="type-panel-grid">
+                    <div class="panel-card">
+                        <h4>Defensive Effectiveness</h4>
+                        <p id="panelDefensiveDescription" class="panel-description">How other types attack affect Normal.</p>
+                        <div id="panelDefensive" class="effectiveness-grid"></div>
+                    </div>
+                    <div class="panel-card">
+                        <h4>Offensive Effectiveness</h4>
+                        <p id="panelOffensiveDescription" class="panel-description">How Normal type attacks affect others.</p>
+                        <div id="panelOffensive" class="effectiveness-grid"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
 
 <script src="script.js"></script>
-
 </body>
 </html>
