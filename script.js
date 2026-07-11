@@ -1,11 +1,11 @@
 const pokemonNames = [];
 const typeDataCache = new Map();
 const abilityDataCache = new Map();
-const encounterDataCache = new Map();
-const mapGenieLocationCache = new Map();
-const pokemonDbLocationCache = new Map();
 const speciesDataCache = new Map();
 const evolutionChainCache = new Map();
+let searchRequestToken = 0;
+let suggestionUpdateTimer = null;
+const suggestionDebounceMs = 80;
 const allTypes = [
     "normal","fire","water","electric","grass","ice",
     "fighting","poison","ground","flying","psychic",
@@ -824,6 +824,16 @@ function updateSuggestions(search) {
     selectedSuggestionIndex = -1;
 }
 
+function scheduleSuggestionUpdate(value) {
+    if (suggestionUpdateTimer) {
+        clearTimeout(suggestionUpdateTimer);
+    }
+
+    suggestionUpdateTimer = setTimeout(() => {
+        updateSuggestions(value);
+    }, suggestionDebounceMs);
+}
+
 async function loadPokemonList() {
     const response = await fetch("https://pokeapi.co/api/v2/pokemon?limit=2000");
     const data = await response.json();
@@ -852,8 +862,10 @@ async function getTypeEffectiveness(types) {
     const effectiveness = {};
     allTypes.forEach(type => (effectiveness[type] = 1));
 
-    for (const type of types) {
-        const data = await getTypeData(type);
+    const uniqueTypes = [...new Set(types.map(type => String(type).toLowerCase()))];
+    const typeDataList = await Promise.all(uniqueTypes.map(type => getTypeData(type)));
+
+    for (const data of typeDataList) {
         data.damage_relations.double_damage_from.forEach(t => {
             effectiveness[t.name] *= 2;
         });
@@ -872,8 +884,10 @@ async function getOffensiveMatchups(types) {
     const effectiveness = {};
     allTypes.forEach(type => (effectiveness[type] = 1));
 
-    for (const type of types) {
-        const data = await getTypeData(type);
+    const uniqueTypes = [...new Set(types.map(type => String(type).toLowerCase()))];
+    const typeDataList = await Promise.all(uniqueTypes.map(type => getTypeData(type)));
+
+    for (const data of typeDataList) {
         data.damage_relations.double_damage_to.forEach(t => {
             effectiveness[t.name] *= 2;
         });
@@ -1094,224 +1108,6 @@ function formatPokemonName(value) {
     return capitalize(String(value || "").replace(/-/g, " "));
 }
 
-function formatVersionLabel(versions) {
-    const unique = [...new Set(versions)];
-    if (!unique.length) return "Scarlet/Violet";
-    if (unique.length === 1 && unique[0] === "scarlet-violet") {
-        return "Scarlet/Violet";
-    }
-    if (unique.length === 2 && unique.includes("scarlet") && unique.includes("violet")) {
-        return "Scarlet/Violet";
-    }
-    return unique.map(version => capitalize(version)).join(" / ");
-}
-
-function normalizePokemonLookupName(value) {
-    return String(value || "")
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "-")
-        .trim();
-}
-
-function collectMapGenieNodes(node, out) {
-    if (!node) return;
-    if (Array.isArray(node)) {
-        node.forEach(item => collectMapGenieNodes(item, out));
-        return;
-    }
-    if (typeof node !== "object") return;
-
-    const name = node.name || node.title || node.label;
-    const category = node.category || node.group || node.type || node.icon || "";
-    const lat = node.lat ?? node.latitude ?? node.y;
-    const lng = node.lng ?? node.longitude ?? node.x;
-    const location = node.location || node.region || node.zone || node.area;
-
-    if (name && (lat !== undefined || lng !== undefined || location)) {
-        out.push({
-            name: String(name),
-            category: String(category || ""),
-            lat: lat !== undefined ? Number(lat) : null,
-            lng: lng !== undefined ? Number(lng) : null,
-            location: location ? String(location) : ""
-        });
-    }
-
-    Object.values(node).forEach(value => {
-        if (typeof value === "object") collectMapGenieNodes(value, out);
-    });
-}
-
-function findMapGeniePokemonLocations(payload, pokemonName) {
-    const normalizedName = normalizePokemonLookupName(pokemonName);
-    if (!normalizedName) return [];
-
-    const candidates = [];
-    collectMapGenieNodes(payload, candidates);
-
-    const rows = candidates.filter(entry => {
-        const entryName = normalizePokemonLookupName(entry.name);
-        if (!entryName) return false;
-        if (entryName !== normalizedName && !entryName.includes(normalizedName) && !normalizedName.includes(entryName)) {
-            return false;
-        }
-
-        const category = entry.category.toLowerCase();
-        return category.includes("pokemon") || category.includes("spawn") || category.includes("encounter");
-    }).slice(0, 24);
-
-    return rows.map(entry => {
-        const hasCoords = Number.isFinite(entry.lat) && Number.isFinite(entry.lng);
-        const coordinateText = hasCoords ? `${entry.lat.toFixed(4)}, ${entry.lng.toFixed(4)}` : "Unknown coordinates";
-        return {
-            location: entry.location || "Paldea Region",
-            versionsLabel: "MapGenie",
-            maxChance: 0,
-            notes: coordinateText
-        };
-    });
-}
-
-async function getMapGeniePokemonLocations(pokemonName) {
-    const key = normalizePokemonLookupName(pokemonName);
-    if (!key) return [];
-    if (mapGenieLocationCache.has(key)) return mapGenieLocationCache.get(key);
-
-    const candidateUrls = [
-        "https://mapgenie.io/api/v1/games/pokemon-scarlet-and-violet/maps/paldea-region/locations",
-        "https://mapgenie.io/api/v1/game/pokemon-scarlet-and-violet/map/paldea-region/locations",
-        "https://mapgenie.io/api/v1/map/pokemon-scarlet-and-violet/paldea-region/locations"
-    ];
-
-    for (const url of candidateUrls) {
-        try {
-            const response = await fetch(url);
-            if (!response.ok) continue;
-            const data = await response.json();
-            const locations = findMapGeniePokemonLocations(data, pokemonName);
-            if (locations.length) {
-                mapGenieLocationCache.set(key, locations);
-                return locations;
-            }
-        } catch {
-            continue;
-        }
-    }
-
-    mapGenieLocationCache.set(key, []);
-    return [];
-}
-
-function stripMarkdownLinks(value) {
-    return String(value || "").replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1");
-}
-
-function parsePokemonDbLocationRow(line) {
-    if (!line || !line.includes("|")) return null;
-    const parts = line.split("|").map(part => part.trim()).filter(Boolean);
-    if (parts.length < 2) return null;
-
-    const rawVersion = parts[0].toLowerCase();
-    let versionsLabel = "";
-    if (rawVersion === "scarlet") versionsLabel = "Scarlet";
-    else if (rawVersion === "violet") versionsLabel = "Violet";
-    else if (rawVersion === "scarlet violet") versionsLabel = "Scarlet/Violet";
-    else return null;
-
-    const locationColumn = parts[1];
-    if (!/\/location\//i.test(locationColumn)) return null;
-
-    const cleanedLocations = stripMarkdownLinks(locationColumn)
-        .replace(/<br\s*\/?>/gi, ",")
-        .split(",")
-        .map(item => item.trim())
-        .filter(Boolean);
-
-    return {
-        versionsLabel,
-        locations: cleanedLocations
-    };
-}
-
-async function getPokemonDbScarletVioletLocations(pokemonName) {
-    const key = normalizePokemonLookupName(pokemonName);
-    if (!key) return [];
-    if (pokemonDbLocationCache.has(key)) return pokemonDbLocationCache.get(key);
-
-    try {
-        const url = `https://r.jina.ai/http://pokemondb.net/pokedex/${encodeURIComponent(key)}/location`;
-        const response = await fetch(url);
-        if (!response.ok) {
-            pokemonDbLocationCache.set(key, []);
-            return [];
-        }
-
-        const text = await response.text();
-        const rows = text
-            .split("\n")
-            .map(line => parsePokemonDbLocationRow(line))
-            .filter(Boolean);
-
-        if (!rows.length) {
-            pokemonDbLocationCache.set(key, []);
-            return [];
-        }
-
-        const flattened = rows.flatMap(row => row.locations.map(location => ({
-            location: formatLocationName(location),
-            versionsLabel: row.versionsLabel,
-            maxChance: 0
-        })));
-
-        const deduped = [];
-        const seen = new Set();
-        flattened.forEach(entry => {
-            const id = `${entry.location.toLowerCase()}::${entry.versionsLabel.toLowerCase()}`;
-            if (seen.has(id)) return;
-            seen.add(id);
-            deduped.push(entry);
-        });
-
-        const results = deduped.slice(0, 24);
-        pokemonDbLocationCache.set(key, results);
-        return results;
-    } catch {
-        pokemonDbLocationCache.set(key, []);
-        return [];
-    }
-}
-
-function summarizeLocationEntries(entries) {
-    if (!entries.length) return null;
-
-    const byLocation = new Map();
-    entries.forEach(entry => {
-        const normalized = String(entry.location || "").trim();
-        if (!normalized) return;
-
-        const key = normalized.toLowerCase();
-        if (!byLocation.has(key)) {
-            byLocation.set(key, {
-                location: normalized,
-                hasScarlet: false,
-                hasViolet: false
-            });
-        }
-
-        const target = byLocation.get(key);
-        const versionLabel = String(entry.versionsLabel || "").toLowerCase();
-        if (versionLabel.includes("scarlet")) target.hasScarlet = true;
-        if (versionLabel.includes("violet")) target.hasViolet = true;
-    });
-
-    const items = [...byLocation.values()];
-
-    return {
-        items
-    };
-}
-
 async function getSpeciesData(speciesUrl) {
     if (!speciesUrl) return null;
     if (speciesDataCache.has(speciesUrl)) return speciesDataCache.get(speciesUrl);
@@ -1414,47 +1210,6 @@ async function getEvolutionInfo(pokemonName, speciesUrl) {
     };
 }
 
-async function getScarletVioletLocations(encountersUrl) {
-    if (!encountersUrl) return [];
-    if (encounterDataCache.has(encountersUrl)) return encounterDataCache.get(encountersUrl);
-
-    try {
-        const response = await fetch(encountersUrl);
-        if (!response.ok) {
-            encounterDataCache.set(encountersUrl, []);
-            return [];
-        }
-
-        const data = await response.json();
-        const locations = (Array.isArray(data) ? data : [])
-            .map(entry => {
-                const versionDetails = (entry.version_details || []).filter(detail => {
-                    const versionName = detail.version?.name;
-                    return versionName === "scarlet" || versionName === "violet" || versionName === "scarlet-violet";
-                });
-
-                if (!versionDetails.length) return null;
-
-                const versions = versionDetails.map(detail => detail.version?.name).filter(Boolean);
-                const maxChance = Math.max(...versionDetails.map(detail => Number(detail.max_chance || 0)));
-
-                return {
-                    location: formatLocationName(entry.location_area?.name || "Unknown area"),
-                    versionsLabel: formatVersionLabel(versions),
-                    maxChance
-                };
-            })
-            .filter(Boolean)
-            .sort((a, b) => a.location.localeCompare(b.location));
-
-        encounterDataCache.set(encountersUrl, locations);
-        return locations;
-    } catch {
-        encounterDataCache.set(encountersUrl, []);
-        return [];
-    }
-}
-
 async function searchPokemon() {
     const name = normalize(input.value);
     if (!name) {
@@ -1462,26 +1217,29 @@ async function searchPokemon() {
         return;
     }
 
+    const requestToken = ++searchRequestToken;
+
     resultEl.innerHTML = `<div class="loading">Loading ${capitalize(name)}...</div>`;
     suggestionBox.innerHTML = "";
 
     try {
         const pokemon = await fetchPokemon(name);
+        if (requestToken !== searchRequestToken) return;
+
         const types = pokemon.types.map(t => t.type.name);
         const displayTypes = types.map(capitalize);
         const artwork = pokemon.sprites.other?.["official-artwork"]?.front_default || pokemon.sprites.front_default;
-        const defensive = await getTypeEffectiveness(types);
-        const offensive = await getOffensiveMatchups(types);
-        const [scarletVioletLocations, mapGenieLocations, pokemonDbLocations, evolutionInfo] = await Promise.all([
-            getScarletVioletLocations(pokemon.location_area_encounters),
-            getMapGeniePokemonLocations(pokemon.name),
-            getPokemonDbScarletVioletLocations(pokemon.name),
-            getEvolutionInfo(pokemon.name, pokemon.species?.url)
+        const defensivePromise = getTypeEffectiveness(types);
+        const offensivePromise = getOffensiveMatchups(types);
+        const abilityDetailsPromise = getAbilityDetails(pokemon.abilities);
+        const evolutionInfoPromise = getEvolutionInfo(pokemon.name, pokemon.species?.url);
+
+        const [defensive, offensive, abilityDetails] = await Promise.all([
+            defensivePromise,
+            offensivePromise,
+            abilityDetailsPromise
         ]);
-        const displayLocations = scarletVioletLocations.length
-            ? scarletVioletLocations
-            : (mapGenieLocations.length ? mapGenieLocations : pokemonDbLocations);
-        const locationSummary = summarizeLocationEntries(displayLocations);
+        if (requestToken !== searchRequestToken) return;
 
         const defense4x = [];
         const defense2x = [];
@@ -1511,7 +1269,6 @@ async function searchPokemon() {
             else if (value === 0) noEffect.push(type);
         });
 
-        const abilityDetails = await getAbilityDetails(pokemon.abilities);
         const abilityMarkup = abilityDetails.map(({ entry, description }) => `
             <div class="badge-tag ability-badge" data-tooltip="${escapeHtml(description)}">
                 ${capitalize(entry.ability.name)}
@@ -1520,7 +1277,7 @@ async function searchPokemon() {
         `).join("");
 
         resultEl.innerHTML = `
-            <article class="pokemon-card">
+            <article class="pokemon-card" data-search-token="${requestToken}">
                 <button class="close-result" type="button" aria-label="Close Pokémon details">×</button>
                 <div class="pokemon-card-inner">
                     <div class="pokemon-art">
@@ -1560,40 +1317,9 @@ async function searchPokemon() {
                             </section>
                         </div>
                         <div class="card-row">
-                            <section class="card-panel">
-                                <h3>Where To Find (Scarlet/Violet)</h3>
-                                ${locationSummary ? `
-                                    <div class="encounter-list">
-                                        <div class="encounter-item">
-                                            <strong>Locations</strong>
-                                            <span class="location-inline">${locationSummary.items.map((item, index) => `
-                                                <span class="location-inline-item">
-                                                    ${escapeHtml(item.location)}
-                                                    ${item.hasScarlet && !item.hasViolet ? `<span class="version-pill version-scarlet" aria-label="Scarlet only">S</span>` : ""}
-                                                    ${item.hasViolet && !item.hasScarlet ? `<span class="version-pill version-violet" aria-label="Violet only">V</span>` : ""}
-                                                </span>
-                                            `).join(`<span class="location-inline-comma">, </span>`)}</span>
-                                        </div>
-                                    </div>
-                                ` : `<p class="encounter-empty">No Scarlet/Violet encounter locations were found from available sources right now.</p>`}
-                            </section>
-                        </div>
-                        <div class="card-row">
-                            <section class="card-panel">
+                            <section class="card-panel" data-section="evolution">
                                 <h3>Evolution</h3>
-                                ${evolutionInfo ? `
-                                    <div class="encounter-list">
-                                        ${evolutionInfo.evolvesTo.length ? evolutionInfo.evolvesTo.map(target => `
-                                            <div class="encounter-item">
-                                                <span>${escapeHtml(target.methods.join(" or "))} → ${escapeHtml(formatPokemonName(target.name))}</span>
-                                            </div>
-                                        `).join("") : `
-                                            <div class="encounter-item">
-                                                <span>This Pokémon does not evolve further.</span>
-                                            </div>
-                                        `}
-                                    </div>
-                                ` : `<p class="encounter-empty">Evolution details are currently unavailable.</p>`}
+                                <p class="encounter-empty">Loading evolution details...</p>
                             </section>
                         </div>
                     </div>
@@ -1602,19 +1328,48 @@ async function searchPokemon() {
         `;
 
         highlightTypeCards(types);
+
+        const evolutionInfo = await evolutionInfoPromise;
+        if (requestToken !== searchRequestToken) return;
+
+        const activeCard = resultEl.querySelector(`.pokemon-card[data-search-token="${requestToken}"]`);
+        if (!activeCard) return;
+
+        const evolutionSection = activeCard.querySelector('[data-section="evolution"]');
+
+        if (evolutionSection) {
+            evolutionSection.innerHTML = `
+                <h3>Evolution</h3>
+                ${evolutionInfo ? `
+                    <div class="encounter-list">
+                        ${evolutionInfo.evolvesTo.length ? evolutionInfo.evolvesTo.map(target => `
+                            <div class="encounter-item">
+                                <span>${escapeHtml(target.methods.join(" or "))} → ${escapeHtml(formatPokemonName(target.name))}</span>
+                            </div>
+                        `).join("") : `
+                            <div class="encounter-item">
+                                <span>This Pokémon does not evolve further.</span>
+                            </div>
+                        `}
+                    </div>
+                ` : `<p class="encounter-empty">Evolution details are currently unavailable.</p>`}
+            `;
+        }
     } catch (error) {
+        if (requestToken !== searchRequestToken) return;
         resultEl.innerHTML = `<div class="error">${error.message}</div>`;
     }
 }
 
 searchButton.addEventListener("click", searchPokemon);
 input.addEventListener("input", event => {
-    updateSuggestions(event.target.value);
+    scheduleSuggestionUpdate(event.target.value);
 });
 
 resultEl.addEventListener("click", event => {
     const closeButton = event.target.closest(".close-result");
     if (!closeButton) return;
+    searchRequestToken += 1;
     input.value = "";
     suggestionBox.classList.add("hidden");
     suggestionBox.innerHTML = "";
@@ -2130,26 +1885,30 @@ function renderAdventureMapPopout(objective, mapState) {
     if (!overlay || !viewport) return;
 
     if (!objective) {
+        delete overlay.dataset.objectiveId;
         overlay.innerHTML = "";
         return;
     }
 
     const meta = getAdventureCategoryMeta(objective.category);
 
-    overlay.innerHTML = `
-        <article class="adventure-marker-popout" style="--objective-accent:${meta.color}">
-            <h3 class="adventure-marker-popout-title">${escapeHtml(objective.name)}</h3>
-            <div class="adventure-marker-popout-badges">
-                <span class="badge-tag">${escapeHtml(objective.category)}</span>
-                <span class="badge-tag">${escapeHtml(objective.type)}</span>
-                <span class="badge-tag">Lv.${escapeHtml(objective.level)}</span>
-            </div>
-            <div class="adventure-marker-popout-weaknesses">
-                <h4>Weak Against</h4>
-                <div class="adventure-type-badge-row">${renderAdventureTypeBadges(objective.weaknesses)}</div>
-            </div>
-        </article>
-    `;
+    if (Number(overlay.dataset.objectiveId) !== Number(objective.id)) {
+        overlay.dataset.objectiveId = String(objective.id);
+        overlay.innerHTML = `
+            <article class="adventure-marker-popout" style="--objective-accent:${meta.color}">
+                <h3 class="adventure-marker-popout-title">${escapeHtml(objective.name)}</h3>
+                <div class="adventure-marker-popout-badges">
+                    <span class="badge-tag">${escapeHtml(objective.category)}</span>
+                    <span class="badge-tag">${escapeHtml(objective.type)}</span>
+                    <span class="badge-tag">Lv.${escapeHtml(objective.level)}</span>
+                </div>
+                <div class="adventure-marker-popout-weaknesses">
+                    <h4>Weak Against</h4>
+                    <div class="adventure-type-badge-row">${renderAdventureTypeBadges(objective.weaknesses)}</div>
+                </div>
+            </article>
+        `;
+    }
 
     const popout = overlay.querySelector(".adventure-marker-popout");
     if (!popout) return;
@@ -2287,7 +2046,7 @@ function updateAdventureSelection(id) {
         marker.classList.toggle("selected", markerId === selectedAdventureObjectiveId);
     });
 
-    renderAdventureMap();
+    centerAdventureObjective(objective);
 
     const selectedCard = document.querySelector(`.adventure-objective-card[data-objective-id="${objective.id}"]`);
     if (selectedCard) {
