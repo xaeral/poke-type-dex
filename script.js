@@ -256,12 +256,63 @@ const objectiveCategoryMeta = {
     "Team Star": { color: "#a875ff", icon: "S", shortLabel: "Team Star" }
 };
 
-// Paldea image includes ocean margins. Remap objective coordinates into the land area.
+// Use direct map coordinates (0-100) for this asset.
 const adventureMapBounds = {
-    left: 10,
-    right: 90,
-    top: 10,
-    bottom: 95
+    left: 0,
+    right: 100,
+    top: 0,
+    bottom: 100
+};
+
+const adventureDisplayCategories = new Set(["Gym", "Titan", "Team Star"]);
+
+const adventureMapGenieGeoBounds = {
+    minLat: 0.4412095757464,
+    maxLat: 0.91498839656768,
+    minLng: -0.97556691147602,
+    maxLng: -0.45514092457378
+};
+
+const adventureMapGenieCoordsById = {
+    1: { lat: 0.5512444567072, lng: -0.82383781671632 },
+    2: { lat: 0.58456002638936, lng: -0.60537665450381 },
+    3: { lat: 0.566368186402, lng: -0.56563347429598 },
+    4: { lat: 0.62361017586358, lng: -0.9211014962078 },
+    5: { lat: 0.65013088475433, lng: -0.81378109393586 },
+    6: { lat: 0.65115242750585, lng: -0.5280091241951 },
+    7: { lat: 0.59076089492335, lng: -0.5728077856198 },
+    8: { lat: 0.6947835701945, lng: -0.55786427996809 },
+    9: { lat: 0.6799777836933, lng: -0.81236621036891 },
+    10: { lat: 0.72489354968322, lng: -0.64244183517402 },
+    11: { lat: 0.72975279062881, lng: -0.7611569932919 },
+    12: { lat: 0.81654638492365, lng: -0.67604846565898 },
+    13: { lat: 0.49038893655426, lng: -0.88042553253963 },
+    14: { lat: 0.68032570615709, lng: -0.90984129344157 },
+    15: { lat: 0.78400919678428, lng: -0.66156980232648 },
+    16: { lat: 0.88572296166669, lng: -0.72750657372857 },
+    17: { lat: 0.78588917013122, lng: -0.51590172743891 },
+    18: { lat: 0.82055871266074, lng: -0.79742303931916 }
+};
+
+const adventureMapGenieOffsetById = {
+    1: { x: 0, y: -1.5 },
+    2: { x: -3, y: 5 },
+    3: { x: -5, y: 2 },
+    4: { x: 1, y: 4 },
+    5: { x: 0, y: 4.5 },
+    6: { x: -4, y: 4.5 },
+    7: { x: -3.5, y: 3 },
+    8: { x: -4, y: 5.5 },
+    9: { x: -2, y: 3.5 },
+    10: { x: -2, y: 5 },
+    11: { x: 0, y: 5 },
+    12: { x: -1, y: 6 },
+    13: { x: 0, y: -1 },
+    14: { x: 0, y: 4.5 },
+    15: { x: -1.5, y: 5.5 },
+    16: { x: -1, y: 6.5 },
+    17: { x: -4, y: 7 },
+    18: { x: 0, y: 8 }
 };
 
 const adventureGuide = [
@@ -274,8 +325,8 @@ const adventureGuide = [
         location: "Cortondo",
         leader: "Katy",
         description: "Take on Katy and her Bug-type team to earn your first Gym Badge.",
-        mapX: 21,
-        mapY: 71,
+        mapX: 29.5,
+        mapY: 76.5,
         heroImage: "./Images/adventure/cortondo-gym.png",
         weaknesses: ["Fire", "Flying", "Rock"],
         resistances: ["Grass", "Fighting", "Ground"],
@@ -295,8 +346,8 @@ const adventureGuide = [
         location: "South Province (Area Three)",
         leader: "Klawf Titan",
         description: "Track down the giant Klawf and battle it to secure the first Herba Mystica path objective.",
-        mapX: 32,
-        mapY: 66,
+        mapX: 67,
+        mapY: 70,
         heroImage: "./Images/adventure/stony-cliff-titan.png",
         weaknesses: ["Water", "Grass", "Fighting", "Ground", "Steel"],
         resistances: ["Normal", "Fire", "Poison", "Flying"],
@@ -314,8 +365,8 @@ const adventureGuide = [
         location: "Artazon",
         leader: "Brassius",
         description: "Defeat Brassius and his artistic Grass-type lineup in East Province.",
-        mapX: 46,
-        mapY: 62,
+        mapX: 75,
+        mapY: 74.8,
         heroImage: "./Images/adventure/artazon-gym.png",
         weaknesses: ["Fire", "Ice", "Poison", "Flying", "Bug"],
         resistances: ["Water", "Electric", "Grass", "Ground"],
@@ -335,8 +386,8 @@ const adventureGuide = [
         location: "West Province (Area One)",
         leader: "Bombirdier Titan",
         description: "Battle Bombirdier in the cliffs and continue the Path of Legends storyline.",
-        mapX: 15,
-        mapY: 46,
+        mapX: 10,
+        mapY: 54,
         heroImage: "./Images/adventure/open-sky-titan.png",
         weaknesses: ["Electric", "Ice", "Rock"],
         resistances: ["Grass", "Fighting", "Bug"],
@@ -355,7 +406,7 @@ const adventureGuide = [
         leader: "Giacomo",
         description: "Infiltrate the Dark Crew base and challenge Giacomo's Segin Starmobile.",
         mapX: 27,
-        mapY: 50,
+        mapY: 58,
         heroImage: "./Images/adventure/team-star-dark-crew.png",
         weaknesses: ["Fighting", "Bug", "Fairy"],
         resistances: ["Ghost", "Dark"],
@@ -374,8 +425,8 @@ const adventureGuide = [
         location: "Levincia",
         leader: "Iono",
         description: "Face streamer Gym Leader Iono for your next badge in Levincia.",
-        mapX: 70,
-        mapY: 62,
+        mapX: 83,
+        mapY: 57,
         heroImage: "./Images/adventure/levincia-gym.png",
         weaknesses: ["Ground"],
         resistances: ["Electric", "Flying", "Steel"],
@@ -396,8 +447,8 @@ const adventureGuide = [
         location: "East Province (Area One)",
         leader: "Mela",
         description: "Defeat Mela and the Schedar Starmobile in Team Star's Fire base.",
-        mapX: 62,
-        mapY: 73,
+        mapX: 74,
+        mapY: 69,
         heroImage: "./Images/adventure/team-star-fire-crew.png",
         weaknesses: ["Water", "Ground", "Rock"],
         resistances: ["Fire", "Grass", "Ice", "Bug", "Steel", "Fairy"],
@@ -416,8 +467,8 @@ const adventureGuide = [
         location: "East Province (Area Three)",
         leader: "Orthworm Titan",
         description: "Chase Orthworm through rocky tunnels to claim another Herba Mystica.",
-        mapX: 73,
-        mapY: 44,
+        mapX: 77,
+        mapY: 49,
         heroImage: "./Images/adventure/lurking-steel-titan.png",
         weaknesses: ["Fire", "Fighting", "Ground"],
         resistances: ["Normal", "Grass", "Ice", "Flying", "Psychic", "Bug", "Rock", "Dragon", "Steel", "Fairy"],
@@ -435,8 +486,8 @@ const adventureGuide = [
         location: "Cascarrafa",
         leader: "Kofu",
         description: "Take on Kofu's Water-types in the bustling market city of Cascarrafa.",
-        mapX: 24,
-        mapY: 53,
+        mapX: 27,
+        mapY: 52,
         heroImage: "./Images/adventure/cascarrafa-gym.png",
         weaknesses: ["Electric", "Grass"],
         resistances: ["Fire", "Water", "Ice", "Steel"],
@@ -456,8 +507,8 @@ const adventureGuide = [
         location: "Tagtree Thicket",
         leader: "Atticus",
         description: "Break through the Poison Crew defenses and battle Atticus.",
-        mapX: 55,
-        mapY: 52,
+        mapX: 64,
+        mapY: 40,
         heroImage: "./Images/adventure/team-star-poison-crew.png",
         weaknesses: ["Ground", "Psychic"],
         resistances: ["Grass", "Fighting", "Poison", "Bug", "Fairy"],
@@ -477,8 +528,8 @@ const adventureGuide = [
         location: "Medali",
         leader: "Larry",
         description: "Challenge Larry in Medali and secure your next Gym Badge.",
-        mapX: 37,
-        mapY: 44,
+        mapX: 40,
+        mapY: 39,
         heroImage: "./Images/adventure/medali-gym.png",
         weaknesses: ["Fighting"],
         resistances: [],
@@ -498,8 +549,8 @@ const adventureGuide = [
         location: "Montenevera",
         leader: "Ryme",
         description: "Take on Ryme's Ghost-type team in a double battle format.",
-        mapX: 49,
-        mapY: 20,
+        mapX: 56,
+        mapY: 28,
         heroImage: "./Images/adventure/montenevera-gym.png",
         weaknesses: ["Ghost", "Dark"],
         resistances: ["Poison", "Bug"],
@@ -520,8 +571,8 @@ const adventureGuide = [
         location: "Alfornada",
         leader: "Tulip",
         description: "Win against Tulip's Psychic team in Alfornada's Gym test finale.",
-        mapX: 8,
-        mapY: 56,
+        mapX: 13,
+        mapY: 86,
         heroImage: "./Images/adventure/alfornada-gym.png",
         weaknesses: ["Bug", "Ghost", "Dark"],
         resistances: ["Fighting", "Psychic"],
@@ -542,8 +593,8 @@ const adventureGuide = [
         location: "Asado Desert",
         leader: "Great Tusk / Iron Treads",
         description: "Defeat the Quaking Earth Titan roaming the Asado Desert.",
-        mapX: 22,
-        mapY: 45,
+        mapX: 7,
+        mapY: 63,
         heroImage: "./Images/adventure/quaking-earth-titan.png",
         weaknesses: ["Water", "Grass", "Ice"],
         resistances: ["Poison", "Rock"],
@@ -561,8 +612,8 @@ const adventureGuide = [
         location: "Glaseado Mountain",
         leader: "Grusha",
         description: "Climb the snowy mountain and battle Grusha for the Ice Badge.",
-        mapX: 66,
-        mapY: 17,
+        mapX: 61,
+        mapY: 35,
         heroImage: "./Images/adventure/glaseado-gym.png",
         weaknesses: ["Fire", "Fighting", "Rock", "Steel"],
         resistances: ["Ice"],
@@ -583,8 +634,8 @@ const adventureGuide = [
         location: "North Province (Area Three)",
         leader: "Ortega",
         description: "Challenge Ortega's Fairy crew and stop the Ruchbah Starmobile.",
-        mapX: 79,
-        mapY: 28,
+        mapX: 50,
+        mapY: 8,
         heroImage: "./Images/adventure/team-star-fairy-crew.png",
         weaknesses: ["Poison", "Steel"],
         resistances: ["Fighting", "Bug", "Dark"],
@@ -605,8 +656,8 @@ const adventureGuide = [
         location: "North Province (Area One)",
         leader: "Eri",
         description: "Take down Team Star's final stronghold with Eri and the Caph Starmobile.",
-        mapX: 57,
-        mapY: 25,
+        mapX: 84,
+        mapY: 28,
         heroImage: "./Images/adventure/team-star-fighting-crew.png",
         weaknesses: ["Flying", "Psychic", "Fairy"],
         resistances: ["Bug", "Rock", "Dark"],
@@ -627,8 +678,8 @@ const adventureGuide = [
         location: "Casseroya Lake",
         leader: "Dondozo & Tatsugiri",
         description: "Complete the final Titan objective at Casseroya Lake.",
-        mapX: 31,
-        mapY: 28,
+        mapX: 35,
+        mapY: 23,
         heroImage: "./Images/adventure/false-dragon-titan.png",
         weaknesses: ["Ice", "Dragon", "Fairy"],
         resistances: ["Fire", "Water", "Electric", "Grass"],
@@ -647,7 +698,11 @@ let adventureDragState = null;
 let adventureSuppressMarkerClick = false;
 const adventureProgressStorageKey = "adventureGuideProgressV1";
 let adventureMapAspectRatio = 1;
-const adventureMapZoom = 1.28;
+const adventureMapBaseZoom = 1.28;
+const adventureMapZoomMin = 0.4;
+const adventureMapZoomMax = 2.6;
+const adventureMapZoomStep = 0.2;
+let adventureMapZoomLevel = 1;
 let adventureCompletedObjectiveIds = new Set();
 
 function loadAdventureProgress() {
@@ -1370,8 +1425,13 @@ function getAdventureCategoryMeta(category) {
     return objectiveCategoryMeta[category] || objectiveCategoryMeta.Gym;
 }
 
+function getAdventureObjectives() {
+    return adventureGuide.filter(objective => adventureDisplayCategories.has(objective.category));
+}
+
 function getAdventureObjectiveById(id) {
-    return adventureGuide.find(objective => objective.id === id) || adventureGuide[0];
+    const objectives = getAdventureObjectives();
+    return objectives.find(objective => objective.id === id) || objectives[0];
 }
 
 function getAdventureRoleLabel(category) {
@@ -1381,8 +1441,15 @@ function getAdventureRoleLabel(category) {
 }
 
 function getAdventureMarkerPosition(objective) {
-    const mapX = Number(objective?.mapX ?? 0);
-    const mapY = Number(objective?.mapY ?? 0);
+    const objectiveId = Number(objective?.id);
+    const geo = adventureMapGenieCoordsById[objectiveId];
+    const offset = adventureMapGenieOffsetById[objectiveId] || { x: 0, y: 0 };
+    const mapX = geo
+        ? (((geo.lng - adventureMapGenieGeoBounds.minLng) / (adventureMapGenieGeoBounds.maxLng - adventureMapGenieGeoBounds.minLng)) * 100) + offset.x
+        : Number(objective?.mapX ?? 0);
+    const mapY = geo
+        ? (((adventureMapGenieGeoBounds.maxLat - geo.lat) / (adventureMapGenieGeoBounds.maxLat - adventureMapGenieGeoBounds.minLat)) * 100) + offset.y
+        : Number(objective?.mapY ?? 0);
     const x = adventureMapBounds.left + ((mapX / 100) * (adventureMapBounds.right - adventureMapBounds.left));
     const y = adventureMapBounds.top + ((mapY / 100) * (adventureMapBounds.bottom - adventureMapBounds.top));
     return {
@@ -1402,8 +1469,8 @@ function sizeAdventureMapInner() {
     const ratio = Number.isFinite(adventureMapAspectRatio) && adventureMapAspectRatio > 0
         ? adventureMapAspectRatio
         : 1;
-    const widthFromViewport = viewportRect.width * adventureMapZoom;
-    const widthFromHeight = viewportRect.height * adventureMapZoom * ratio;
+    const widthFromViewport = viewportRect.width * adventureMapBaseZoom * adventureMapZoomLevel;
+    const widthFromHeight = viewportRect.height * adventureMapBaseZoom * adventureMapZoomLevel * ratio;
     const targetWidth = Math.ceil(Math.max(widthFromViewport, widthFromHeight));
     const targetHeight = Math.ceil(targetWidth / ratio);
 
@@ -1414,6 +1481,51 @@ function sizeAdventureMapInner() {
         innerWidth: targetWidth,
         innerHeight: targetHeight
     };
+}
+
+function setAdventureMapZoom(nextZoomLevel, options = {}) {
+    const viewport = el("adventureMapViewport");
+    const inner = el("adventureMapInner");
+    if (!viewport || !inner) return;
+
+    const clampedZoom = Math.max(adventureMapZoomMin, Math.min(adventureMapZoomMax, nextZoomLevel));
+    if (Math.abs(clampedZoom - adventureMapZoomLevel) < 0.001) return;
+
+    const currentState = adventureMapPositionState || applyAdventureMapTransform(0, 0);
+    if (!currentState) return;
+
+    const anchorX = Number.isFinite(options.anchorX) ? options.anchorX : viewport.clientWidth / 2;
+    const anchorY = Number.isFinite(options.anchorY) ? options.anchorY : viewport.clientHeight / 2;
+    const worldX = (anchorX - currentState.translateX) / currentState.innerWidth;
+    const worldY = (anchorY - currentState.translateY) / currentState.innerHeight;
+
+    adventureMapZoomLevel = clampedZoom;
+    const resized = sizeAdventureMapInner();
+    if (!resized) return;
+
+    const nextX = anchorX - (worldX * resized.innerWidth);
+    const nextY = anchorY - (worldY * resized.innerHeight);
+    const nextState = applyAdventureMapTransform(nextX, nextY, { clamp: true });
+
+    const zoomValueEl = el("adventureMapZoomValue");
+    if (zoomValueEl) {
+        zoomValueEl.textContent = `${Math.round(adventureMapZoomLevel * 100)}%`;
+    }
+
+    const selectedObjective = selectedAdventureObjectiveId ? getAdventureObjectiveById(selectedAdventureObjectiveId) : null;
+    renderAdventureMapPopout(selectedObjective, nextState);
+}
+
+function updateAdventureZoomUi() {
+    const zoomValueEl = el("adventureMapZoomValue");
+    if (zoomValueEl) {
+        zoomValueEl.textContent = `${Math.round(adventureMapZoomLevel * 100)}%`;
+    }
+
+    const zoomInBtn = el("adventureZoomIn");
+    const zoomOutBtn = el("adventureZoomOut");
+    if (zoomInBtn) zoomInBtn.disabled = adventureMapZoomLevel >= adventureMapZoomMax;
+    if (zoomOutBtn) zoomOutBtn.disabled = adventureMapZoomLevel <= adventureMapZoomMin;
 }
 
 function syncAdventureMapAspectRatio() {
@@ -1433,7 +1545,9 @@ function renderAdventureList() {
     const listEl = el("adventureObjectiveList");
     if (!listEl) return;
 
-    listEl.innerHTML = adventureGuide.map(objective => {
+    const objectives = getAdventureObjectives();
+
+    listEl.innerHTML = objectives.map(objective => {
         const meta = getAdventureCategoryMeta(objective.category);
         const isSelected = objective.id === selectedAdventureObjectiveId;
         const isCompleted = isAdventureObjectiveCompleted(objective.id);
@@ -1534,12 +1648,14 @@ function renderAdventureMap() {
     const mapInner = el("adventureMapInner");
     if (!mapInner) return;
 
+    const objectives = getAdventureObjectives();
+
     sizeAdventureMapInner();
 
     mapInner.innerHTML = `
-        <img class="adventure-map-base" src="./Images/adventure/paldea.jpg" alt="Paldea map" loading="lazy" draggable="false" onerror="this.onerror=null;this.src='./Images/maps/paldea-map.png'">
+        <img class="adventure-map-base" src="./Images/adventure/paldea.png" alt="Paldea map" loading="lazy" draggable="false" onerror="this.onerror=null;this.src='./Images/maps/paldea-map.png'">
         <div class="adventure-map-watermark">PALDEA</div>
-        ${adventureGuide.map(objective => {
+        ${objectives.map(objective => {
             const meta = getAdventureCategoryMeta(objective.category);
             const isSelected = objective.id === selectedAdventureObjectiveId;
             const isCompleted = isAdventureObjectiveCompleted(objective.id);
@@ -1774,6 +1890,11 @@ function renderAdventureGuidePage() {
                 </aside>
 
                 <section class="adventure-column adventure-map-column">
+                    <div class="adventure-map-zoom-controls" aria-label="Map zoom controls">
+                        <button id="adventureZoomOut" type="button" class="adventure-map-zoom-btn" aria-label="Zoom out">-</button>
+                        <span id="adventureMapZoomValue" class="adventure-map-zoom-value">100%</span>
+                        <button id="adventureZoomIn" type="button" class="adventure-map-zoom-btn" aria-label="Zoom in">+</button>
+                    </div>
                     <div id="adventureMapViewport" class="adventure-map-viewport">
                         <div id="adventureMapInner" class="adventure-map-inner"></div>
                     </div>
@@ -1783,12 +1904,16 @@ function renderAdventureGuidePage() {
         </section>
     `;
 
-    selectedAdventureObjectiveId = getAdventureObjectiveById(selectedAdventureObjectiveId)?.id || adventureGuide[0].id;
+    const firstObjectiveId = getAdventureObjectives()[0]?.id || null;
+    selectedAdventureObjectiveId = getAdventureObjectiveById(selectedAdventureObjectiveId)?.id || firstObjectiveId;
     renderAdventureList();
     renderAdventureMap();
 
     const objectiveList = el("adventureObjectiveList");
     const mapInner = el("adventureMapInner");
+    const zoomInBtn = el("adventureZoomIn");
+    const zoomOutBtn = el("adventureZoomOut");
+    const viewport = el("adventureMapViewport");
 
     if (objectiveList) {
         objectiveList.addEventListener("change", event => {
@@ -1817,6 +1942,32 @@ function renderAdventureGuidePage() {
         });
     }
 
+    if (zoomInBtn) {
+        zoomInBtn.addEventListener("click", () => {
+            setAdventureMapZoom(adventureMapZoomLevel + adventureMapZoomStep);
+            updateAdventureZoomUi();
+        });
+    }
+
+    if (zoomOutBtn) {
+        zoomOutBtn.addEventListener("click", () => {
+            setAdventureMapZoom(adventureMapZoomLevel - adventureMapZoomStep);
+            updateAdventureZoomUi();
+        });
+    }
+
+    if (viewport) {
+        viewport.addEventListener("wheel", event => {
+            event.preventDefault();
+            const rect = viewport.getBoundingClientRect();
+            const anchorX = event.clientX - rect.left;
+            const anchorY = event.clientY - rect.top;
+            const delta = event.deltaY < 0 ? adventureMapZoomStep : -adventureMapZoomStep;
+            setAdventureMapZoom(adventureMapZoomLevel + delta, { anchorX, anchorY });
+            updateAdventureZoomUi();
+        }, { passive: false });
+    }
+
     setupAdventureMapDragging();
 
     if (adventureResizeHandler) {
@@ -1832,6 +1983,7 @@ function renderAdventureGuidePage() {
     window.requestAnimationFrame(() => {
         const objective = getAdventureObjectiveById(selectedAdventureObjectiveId);
         centerAdventureObjective(objective);
+        updateAdventureZoomUi();
     });
 }
 
