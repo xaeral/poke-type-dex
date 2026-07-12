@@ -5,12 +5,20 @@ const abilityDataCache = new Map();
 const speciesDataCache = new Map();
 const evolutionChainCache = new Map();
 const pokemonAvailabilityCache = new Map();
+const availablePokemonCatalogCache = new Map();
+const availablePokemonProgressCache = new Map();
+const availablePokemonProgressState = new Map();
 let searchRequestToken = 0;
 let suggestionUpdateTimer = null;
 let suggestionRequestToken = 0;
 let coverageAnalysisToken = 0;
+let availablePokemonLoadToken = 0;
 const suggestionDebounceMs = 80;
 const teamStorageKey = "teamPlannerTeamV1";
+const availablePokemonState = {
+    types: [],
+    search: ""
+};
 const allTypes = [
     "normal","fire","water","electric","grass","ice",
     "fighting","poison","ground","flying","psychic",
@@ -230,9 +238,15 @@ const plannerGameVersions = {
     "brilliant-diamond-shining-pearl": ["brilliant-diamond", "shining-pearl"],
     "lets-go-pikachu-eevee": ["lets-go-pikachu", "lets-go-eevee"]
 };
+const gamePokedexes = {
+    "scarlet-violet": ["paldea", "kitakami", "blueberry"],
+    "legends-arceus": ["hisui"],
+    "sword-shield": ["galar", "isle-of-armor", "crown-tundra"],
+    "brilliant-diamond-shining-pearl": ["sinnoh"],
+    "lets-go-pikachu-eevee": ["kanto"]
+};
 const plannerState = {
     game: "scarlet-violet",
-    selectionTarget: null,
 };
 let currentPage = "reference";
 let coverageHoverToken = 0;
@@ -292,6 +306,11 @@ const typeColorMap = types.reduce((map, type) => {
 }, {});
 
 typeColorMap.flying = FLYING_TYPE_COLOR;
+
+const typeStrongMap = types.reduce((map, type) => {
+    map[type.name.toLowerCase()] = type.strong.map(target => String(target).toLowerCase());
+    return map;
+}, {});
 
 const objectiveCategoryMeta = {
     Gym: { color: "#4ea1ff", icon: "G", shortLabel: "Gym" },
@@ -844,16 +863,33 @@ function isTeamPlannerPage() {
 }
 
 function getCurrentPlannerSelectionLabel() {
-    if (!plannerState.selectionTarget) return "";
-    return `Replacing Slot ${plannerState.selectionTarget.slotIndex + 1}`;
+    return "";
 }
 
 function getTypeColor(name) {
     return typeColorMap[String(name || "").toLowerCase()] || "#6b7280";
 }
 
+function getSuperEffectiveAgainst(types) {
+    const targets = new Set();
+    types.forEach(typeName => {
+        (typeStrongMap[String(typeName || "").toLowerCase()] || []).forEach(target => {
+            targets.add(target);
+        });
+    });
+    return allTypes.filter(type => targets.has(type));
+}
+
 function getGameVersions(gameKey) {
     return plannerGameVersions[gameKey] || [];
+}
+
+function getGamePokedexes(gameKey) {
+    return gamePokedexes[gameKey] || [];
+}
+
+function getGameLabel(gameKey) {
+    return plannerGameOptions.find(option => option.key === gameKey)?.label || gameKey;
 }
 
 function isScarletVioletGame(gameKey = currentGame) {
@@ -879,6 +915,11 @@ function syncAdventureVisibility(gameKey = currentGame) {
     if (adventureButton) {
         adventureButton.classList.toggle("hidden", !isScarletVioletGame(gameKey));
     }
+
+    const teraButton = document.querySelector('.main-nav .nav-item[data-page="tera"]');
+    if (teraButton) {
+        teraButton.classList.toggle("hidden", !isScarletVioletGame(gameKey));
+    }
 }
 
 function applyGameSelection(gameKey, options = {}) {
@@ -896,18 +937,6 @@ function applyGameSelection(gameKey, options = {}) {
     }
 }
 
-function setPlannerSelectionTarget(target) {
-    plannerState.selectionTarget = target;
-    if (!isTeamPlannerPage()) return;
-    input.focus();
-    scheduleSuggestionUpdate(input.value);
-    const targetLabel = el("plannerActiveTarget");
-    if (targetLabel) {
-        targetLabel.textContent = getCurrentPlannerSelectionLabel();
-    }
-    renderTeam();
-}
-
 async function getPokemonData(name) {
     const key = normalize(name);
     if (pokemonDataCache.has(key)) return pokemonDataCache.get(key);
@@ -923,14 +952,20 @@ async function getPokemonData(name) {
 function normalizeTeamMember(member) {
     if (!member || typeof member !== "object") return null;
     if (!member.pokemon) {
-        return { pokemon: null, types: [], sprite: "", game: "" };
+        return { pokemon: null, types: [], sprite: "", game: "", superEffectiveAgainst: [] };
     }
+
+    const types = Array.isArray(member.types) ? member.types.filter(type => typeof type === "string") : [];
+    const superEffectiveAgainst = Array.isArray(member.superEffectiveAgainst)
+        ? member.superEffectiveAgainst.filter(type => typeof type === "string")
+        : getSuperEffectiveAgainst(types);
 
     return {
         pokemon: typeof member.pokemon === "string" ? member.pokemon : null,
-        types: Array.isArray(member.types) ? member.types.filter(type => typeof type === "string") : [],
+        types,
         sprite: typeof member.sprite === "string" ? member.sprite : "",
-        game: typeof member.game === "string" ? member.game : ""
+        game: typeof member.game === "string" ? member.game : "",
+        superEffectiveAgainst
     };
 }
 
@@ -965,11 +1000,344 @@ async function getPokemonAvailability(name, gameKey) {
     const cacheKey = `${normalize(name)}::${gameKey}`;
     if (pokemonAvailabilityCache.has(cacheKey)) return pokemonAvailabilityCache.get(cacheKey);
 
-    const pokemon = await getPokemonData(name);
-    const allowedVersions = new Set(getGameVersions(gameKey));
-    const available = pokemon.game_indices.some(entry => allowedVersions.has(entry.version?.name));
-    pokemonAvailabilityCache.set(cacheKey, available);
-    return available;
+    try {
+        const pokemon = await getPokemonData(name);
+        const species = await getSpeciesData(pokemon.species?.url);
+        const allowedPokedexes = new Set(getGamePokedexes(gameKey));
+        const available = Array.isArray(species?.pokedex_numbers) && species.pokedex_numbers.some(entry => allowedPokedexes.has(entry.pokedex?.name));
+        pokemonAvailabilityCache.set(cacheKey, available);
+        return available;
+    } catch {
+        pokemonAvailabilityCache.set(cacheKey, true);
+        return true;
+    }
+}
+
+async function getAvailablePokemonCatalog(gameKey) {
+    const cacheKey = gameKey || currentGame;
+    if (availablePokemonCatalogCache.has(cacheKey)) return availablePokemonCatalogCache.get(cacheKey);
+
+    const promise = (async () => {
+        const dexNames = getGamePokedexes(cacheKey);
+        if (!dexNames.length) return [];
+
+        const dexResponses = await Promise.all(dexNames.map(async dexName => {
+            try {
+                const response = await fetch(`https://pokeapi.co/api/v2/pokedex/${dexName}`);
+                if (!response.ok) return null;
+                return await response.json();
+            } catch {
+                return null;
+            }
+        }));
+
+        const orderedNames = [];
+        const seen = new Set();
+        dexResponses.forEach(data => {
+            data?.pokemon_entries?.forEach(entry => {
+                const speciesName = entry.pokemon_species?.name;
+                if (!speciesName || seen.has(speciesName)) return;
+                seen.add(speciesName);
+                orderedNames.push(speciesName);
+            });
+        });
+
+        const varietyNames = [];
+        const varietySeen = new Set();
+        const batchSize = 20;
+        for (let index = 0; index < orderedNames.length; index += batchSize) {
+            const batch = orderedNames.slice(index, index + batchSize);
+            const batchResults = await Promise.all(batch.map(async name => {
+                try {
+                    const pokemon = await getPokemonData(name);
+                    const species = await getSpeciesData(pokemon.species?.url);
+                    const names = Array.isArray(species?.varieties) && species.varieties.length
+                        ? species.varieties.map(variety => variety.pokemon?.name).filter(Boolean)
+                        : [pokemon.name];
+                    return names;
+                } catch {
+                    return [name];
+                }
+            }));
+
+            batchResults.flat().forEach(name => {
+                if (!name || varietySeen.has(name)) return;
+                varietySeen.add(name);
+                varietyNames.push(name);
+            });
+        }
+
+        const catalog = [];
+        for (let index = 0; index < varietyNames.length; index += batchSize) {
+            const batch = varietyNames.slice(index, index + batchSize);
+            const batchResults = await Promise.all(batch.map(async name => {
+                try {
+                    const pokemon = await getPokemonData(name);
+                    return {
+                        name: pokemon.name,
+                        types: pokemon.types.map(entry => capitalize(entry.type.name)),
+                        sprite: pokemon.sprites.other?.["official-artwork"]?.front_default || pokemon.sprites.front_default || ""
+                    };
+                } catch {
+                    return null;
+                }
+            }));
+
+            catalog.push(...batchResults.filter(Boolean));
+        }
+
+        return catalog;
+    })();
+
+    availablePokemonCatalogCache.set(cacheKey, promise);
+    return promise;
+}
+
+function getAvailablePokemonProgressState(gameKey) {
+    const cacheKey = gameKey || currentGame;
+    if (!availablePokemonProgressState.has(cacheKey)) {
+        availablePokemonProgressState.set(cacheKey, {
+            catalog: [],
+            loading: false,
+            promise: null,
+            token: 0
+        });
+    }
+
+    return availablePokemonProgressState.get(cacheKey);
+}
+
+async function getAvailablePokemonCatalogProgress(gameKey) {
+    const cacheKey = gameKey || currentGame;
+    if (availablePokemonProgressCache.has(cacheKey)) return availablePokemonProgressCache.get(cacheKey);
+
+    const progressState = getAvailablePokemonProgressState(cacheKey);
+    if (progressState.loading && progressState.promise) return progressState.promise;
+
+    progressState.loading = true;
+    progressState.token += 1;
+    const runToken = progressState.token;
+
+    const promise = (async () => {
+        const dexNames = getGamePokedexes(cacheKey);
+        if (!dexNames.length) return [];
+
+        const dexResponses = await Promise.all(dexNames.map(async dexName => {
+            try {
+                const response = await fetch(`https://pokeapi.co/api/v2/pokedex/${dexName}`);
+                if (!response.ok) return null;
+                return await response.json();
+            } catch {
+                return null;
+            }
+        }));
+
+        const orderedNames = [];
+        const seen = new Set();
+        dexResponses.forEach(data => {
+            data?.pokemon_entries?.forEach(entry => {
+                const speciesName = entry.pokemon_species?.name;
+                if (!speciesName || seen.has(speciesName)) return;
+                seen.add(speciesName);
+                orderedNames.push(speciesName);
+            });
+        });
+
+        const varietyNames = [];
+        const varietySeen = new Set();
+        const speciesBatchSize = 18;
+        for (let index = 0; index < orderedNames.length; index += speciesBatchSize) {
+            const batch = orderedNames.slice(index, index + speciesBatchSize);
+            const batchResults = await Promise.all(batch.map(async name => {
+                try {
+                    const pokemon = await getPokemonData(name);
+                    const species = await getSpeciesData(pokemon.species?.url);
+                    const names = Array.isArray(species?.varieties) && species.varieties.length
+                        ? species.varieties.map(variety => variety.pokemon?.name).filter(Boolean)
+                        : [pokemon.name];
+                    return names;
+                } catch {
+                    return [name];
+                }
+            }));
+
+            batchResults.flat().forEach(name => {
+                if (!name || varietySeen.has(name)) return;
+                varietySeen.add(name);
+                varietyNames.push(name);
+            });
+        }
+
+        const catalog = [];
+        const pokemonBatchSize = 12;
+        for (let index = 0; index < varietyNames.length; index += pokemonBatchSize) {
+            const batch = varietyNames.slice(index, index + pokemonBatchSize);
+            const batchResults = await Promise.all(batch.map(async name => {
+                try {
+                    const pokemon = await getPokemonData(name);
+                    return {
+                        name: pokemon.name,
+                        types: pokemon.types.map(entry => capitalize(entry.type.name)),
+                        sprite: pokemon.sprites.other?.["official-artwork"]?.front_default || pokemon.sprites.front_default || ""
+                    };
+                } catch {
+                    return null;
+                }
+            }));
+
+            const cleanBatch = batchResults.filter(Boolean);
+            catalog.push(...cleanBatch);
+            if (runToken === progressState.token && cleanBatch.length) {
+                progressState.catalog = catalog.slice();
+                if (currentGame === cacheKey) {
+                    updateAvailablePokemonBrowser();
+                }
+            }
+        }
+
+        progressState.catalog = catalog.slice();
+        progressState.loading = false;
+        return catalog;
+    })();
+
+    progressState.promise = promise;
+    availablePokemonProgressCache.set(cacheKey, promise);
+    return promise;
+}
+
+function renderAvailablePokemonFilterChips() {
+    const chips = [
+        { key: "all", label: "All" },
+        ...types.map(type => ({ key: type.name.toLowerCase(), label: type.name, color: type.color }))
+    ];
+
+    return chips.map(chip => {
+        const active = chip.key === "all"
+            ? availablePokemonState.types.length === 0
+            : availablePokemonState.types.includes(chip.key);
+        const style = chip.color ? `style="--chip-color:${chip.color};"` : "";
+        return `<button type="button" class="available-filter-chip ${active ? "active" : ""}" data-type-filter="${chip.key}" ${style}>${chip.label}</button>`;
+    }).join("");
+}
+
+function renderAvailablePokemonCard(entry) {
+    const typesMarkup = entry.types.map(type => `<span class="available-pokemon-type" style="background:${getTypeColor(type)}">${type}</span>`).join("");
+    return `
+        <button type="button" class="available-pokemon-card" data-pokemon="${entry.name}" aria-label="Add ${formatPokemonName(entry.name)} to team">
+            <div class="available-pokemon-art">
+                <img src="${entry.sprite}" alt="${formatPokemonName(entry.name)} artwork">
+            </div>
+            <div class="available-pokemon-name">${formatPokemonName(entry.name)}</div>
+            <div class="available-pokemon-types">${typesMarkup}</div>
+        </button>
+    `;
+}
+
+async function updateAvailablePokemonBrowser() {
+    const grid = el("availablePokemonGrid");
+    const count = el("availablePokemonCount");
+    if (!grid || !count) return;
+
+    const token = ++availablePokemonLoadToken;
+    grid.innerHTML = `<div class="planner-loading">Loading available Pokémon...</div>`;
+    count.textContent = "Loading...";
+
+    const searchQuery = normalize(availablePokemonState.search);
+    const selectedTypes = availablePokemonState.types;
+    const progressState = getAvailablePokemonProgressState(currentGame);
+
+    const renderCatalog = (catalog) => {
+        if (token !== availablePokemonLoadToken || !grid.isConnected) return;
+
+        const filtered = catalog.filter(entry => {
+            const matchesName = !searchQuery || normalize(entry.name).includes(searchQuery);
+            const matchesTypes = selectedTypes.length === 0 || entry.types.some(type => selectedTypes.includes(type.toLowerCase()));
+            return matchesName && matchesTypes;
+        });
+
+        count.textContent = `${filtered.length} available`;
+        grid.innerHTML = filtered.length
+            ? filtered.map(renderAvailablePokemonCard).join("")
+            : progressState.loading
+                ? `<div class="planner-loading">Loading available Pokémon...</div>`
+                : `<div class="planner-loading">No Pokémon match this type filter.</div>`;
+    };
+
+    renderCatalog(progressState.catalog);
+
+    getAvailablePokemonCatalogProgress(currentGame).then(catalog => {
+        progressState.catalog = catalog.slice();
+        progressState.loading = false;
+        renderCatalog(progressState.catalog);
+    }).catch(() => {
+        if (token === availablePokemonLoadToken && grid.isConnected) {
+            progressState.loading = false;
+            grid.innerHTML = `<div class="planner-loading">Failed to load available Pokémon.</div>`;
+            count.textContent = "0 available";
+        }
+    });
+}
+
+function renderAvailablePokemonBrowser() {
+    const browser = el("availablePokemonBrowser");
+    if (!browser) return;
+
+    browser.innerHTML = `
+        <div class="section-header planner-section-header">
+            <div>
+                <h3>Available Pokémon</h3>
+                <p>Browse the ${getGameLabel(currentGame)} dex and filter by type to find strong team options.</p>
+            </div>
+            <div id="availablePokemonCount" class="planner-active-target">Loading...</div>
+        </div>
+        <div class="available-pokemon-filter-note">Select one or more types to narrow the list.</div>
+        <div class="available-pokemon-search-row">
+            <input id="availablePokemonSearch" class="available-pokemon-search" type="search" placeholder="Search by name" value="${escapeHtml(availablePokemonState.search)}" aria-label="Search available Pokémon by name">
+        </div>
+        <div class="available-pokemon-filters">
+            ${renderAvailablePokemonFilterChips()}
+        </div>
+        <div id="availablePokemonGrid" class="available-pokemon-grid"></div>
+    `;
+
+    const searchInput = el("availablePokemonSearch");
+    if (searchInput) {
+        searchInput.addEventListener("input", event => {
+            availablePokemonState.search = event.target.value || "";
+            updateAvailablePokemonBrowser();
+        });
+    }
+
+    browser.querySelectorAll(".available-filter-chip").forEach(button => {
+        button.addEventListener("click", () => {
+            const typeFilter = button.dataset.typeFilter || "all";
+            if (typeFilter === "all") {
+                availablePokemonState.types = [];
+            } else if (availablePokemonState.types.includes(typeFilter)) {
+                availablePokemonState.types = availablePokemonState.types.filter(type => type !== typeFilter);
+            } else {
+                availablePokemonState.types = [...availablePokemonState.types, typeFilter];
+            }
+            updateAvailablePokemonBrowser();
+        });
+    });
+
+    const grid = el("availablePokemonGrid");
+    if (grid) {
+        grid.addEventListener("click", event => {
+            const card = event.target.closest(".available-pokemon-card");
+            if (!card) return;
+            const name = normalize(card.dataset.pokemon);
+            grid.querySelectorAll(".available-pokemon-card.selected").forEach(item => item.classList.remove("selected"));
+            card.classList.add("selected");
+            window.setTimeout(() => {
+                card.classList.remove("selected");
+            }, 260);
+            addPokemon(name).catch(() => {});
+        });
+    }
+
+    updateAvailablePokemonBrowser();
 }
 
 async function filterSuggestionsByGame(matches) {
@@ -989,9 +1357,11 @@ async function filterSuggestionsByGame(matches) {
 }
 
 function buildPokemonRecord(pokemon) {
+    const types = pokemon.types.map(entry => capitalize(entry.type.name));
     return {
         pokemon: pokemon.name,
-        types: pokemon.types.map(entry => capitalize(entry.type.name)),
+        types,
+        superEffectiveAgainst: getSuperEffectiveAgainst(types),
         sprite: pokemon.sprites.other?.["official-artwork"]?.front_default || pokemon.sprites.front_default || "",
         game: plannerState.game
     };
@@ -1213,39 +1583,50 @@ function getHoverTier(offenseValue, defenseValue) {
 }
 
 function getTeamSummary() {
-    const weaknesses = new Set();
-    const resistances = new Set();
-    const immunities = new Set();
+    const weaknesses = new Map(allTypes.map(type => [type, new Set()]));
+    const resistances = new Map(allTypes.map(type => [type, new Set()]));
+    const immunities = new Map(allTypes.map(type => [type, new Set()]));
 
     return Promise.all(team.map(async member => {
         if (!member.pokemon) return null;
         const defense = await getTypeEffectiveness(member.types);
-        return defense;
+        return { name: capitalize(member.pokemon), defense };
     })).then(results => {
-        results.forEach(defense => {
-            if (!defense) return;
-            Object.entries(defense).forEach(([type, value]) => {
+        results.forEach(result => {
+            if (!result) return;
+            Object.entries(result.defense).forEach(([type, value]) => {
                 if (value === 0) {
-                    immunities.add(type);
+                    immunities.get(type)?.add(result.name);
                 } else if (value > 1) {
-                    weaknesses.add(type);
+                    weaknesses.get(type)?.add(result.name);
                 } else if (value < 1) {
-                    resistances.add(type);
+                    resistances.get(type)?.add(result.name);
                 }
             });
         });
 
+        const toEntries = map => Array.from(map.entries())
+            .filter(([, members]) => members.size >= 2)
+            .map(([type, members]) => ({ type, members: Array.from(members) }));
+
+        const toImmunityEntries = map => Array.from(map.entries())
+            .filter(([, members]) => members.size > 0)
+            .map(([type, members]) => ({ type, members: Array.from(members) }));
+
         return {
-            weaknesses: Array.from(weaknesses),
-            resistances: Array.from(resistances),
-            immunities: Array.from(immunities)
+            weaknesses: toEntries(weaknesses),
+            resistances: toEntries(resistances),
+            immunities: toImmunityEntries(immunities)
         };
     });
 }
 
-function renderTypeBadgeList(typeNames, emptyLabel = "None") {
-    return typeNames.length
-        ? typeNames.map(type => createTypeBadge(type)).join("")
+function renderTypeBadgeList(typeEntries, emptyLabel = "None") {
+    return typeEntries.length
+        ? typeEntries.map(entry => {
+            const tooltip = `${capitalize(entry.type)}: ${entry.members.join(", ")}`;
+            return `<span class="team-summary-badge" data-tooltip="${escapeHtml(tooltip)}" aria-label="${escapeHtml(tooltip)}">${createTypeBadge(entry.type)}</span>`;
+        }).join("")
         : `<span class="team-summary-empty">${emptyLabel}</span>`;
 }
 
@@ -1262,19 +1643,19 @@ async function renderTeamSummary() {
             <div class="summary-card-header">
                 <h4>Team Weaknesses</h4>
             </div>
-            <div class="summary-badges">${renderTypeBadgeList(summary.weaknesses)}</div>
+            <div class="summary-badges">${renderTypeBadgeList(summary.weaknesses, "— None —")}</div>
         </article>
         <article class="summary-card">
             <div class="summary-card-header">
                 <h4>Team Resistances</h4>
             </div>
-            <div class="summary-badges">${renderTypeBadgeList(summary.resistances)}</div>
+            <div class="summary-badges">${renderTypeBadgeList(summary.resistances, "— None —")}</div>
         </article>
         <article class="summary-card">
             <div class="summary-card-header">
                 <h4>Team Immunities</h4>
             </div>
-            <div class="summary-badges">${renderTypeBadgeList(summary.immunities)}</div>
+            <div class="summary-badges">${renderTypeBadgeList(summary.immunities, "— None —")}</div>
         </article>
     `;
 }
@@ -1292,12 +1673,9 @@ async function applyCoverageHover(typeName) {
     const token = ++coverageHoverToken;
     const activeMembers = team.map(async member => {
         if (!member.pokemon) return null;
-        const offense = await getOffensiveMatchups(member.types);
-        const defense = await getTypeEffectiveness(member.types);
         return {
             name: member.pokemon,
-            offenseValue: offense[typeName],
-            defenseValue: defense[typeName]
+            offenseValue: (Array.isArray(member.superEffectiveAgainst) ? member.superEffectiveAgainst : getSuperEffectiveAgainst(member.types || [])).includes(typeName) ? 2 : 0
         };
     });
 
@@ -1310,26 +1688,12 @@ async function applyCoverageHover(typeName) {
         card.removeAttribute("data-tooltip");
     });
 
-    const bestScore = results.reduce((highest, result) => {
-        if (!result) return highest;
-        const score = result.offenseValue > 1 ? 3 : result.defenseValue === 0 ? 3 : result.defenseValue === 0.25 ? 2 : result.defenseValue === 0.5 ? 1 : 0;
-        return Math.max(highest, score);
-    }, -1);
-
     results.forEach((result, index) => {
         const card = cards[index];
         if (!card || !result) return;
 
-        const tier = getHoverTier(result.offenseValue, result.defenseValue);
-        const tooltip = formatHoverTooltip(typeName, result.offenseValue, result.defenseValue);
-        card.dataset.tooltip = tooltip;
-
-        if (tier === "best" && ((result.offenseValue > 1 ? 3 : 0) >= bestScore || (result.defenseValue <= 0.5 && bestScore <= 3))) {
+        if (result.offenseValue > 1) {
             card.classList.add("coverage-best");
-        } else if (tier === "very-poor") {
-            card.classList.add("coverage-very-poor");
-        } else if (tier === "poor") {
-            card.classList.add("coverage-poor");
         }
     });
 }
@@ -1346,12 +1710,11 @@ function renderTeam() {
     grid.innerHTML = team.map((member, index) => {
         const types = member.types || [];
         const { primary, secondary } = getSlotColors(types);
-        const isActiveTarget = plannerState.selectionTarget?.type === "team" && plannerState.selectionTarget.slotIndex === index;
-        const slotClass = ["team-slot", member.pokemon ? "filled" : "empty", isActiveTarget ? "targeted" : ""].filter(Boolean).join(" ");
+        const slotClass = ["team-slot", member.pokemon ? "filled" : "empty"].join(" ");
         const typeBadges = types.length
             ? types.map(type => `<span class="team-slot-type" style="background:${getTypeColor(type)}">${type}</span>`).join("")
             : `<span class="team-slot-type muted">No types</span>`;
-        const label = member.pokemon ? `Remove ${capitalize(member.pokemon)} from team` : `Add Pokémon to slot ${index + 1}`;
+        const label = member.pokemon ? `Remove ${capitalize(member.pokemon)} from team` : `Empty slot ${index + 1}`;
 
         return `
             <article class="${slotClass}" data-slot-index="${index}">
@@ -1366,10 +1729,10 @@ function renderTeam() {
                             </div>
                             ${member.sprite ? `<img class="team-slot-sprite" src="${member.sprite}" alt="${capitalize(member.pokemon)} artwork">` : ""}
                         </div>
-                        ${member.pokemon ? "" : `<div class="team-slot-plus">Add Pokémon</div>`}
+                        ${member.pokemon ? "" : `<div class="team-slot-plus">Empty Slot</div>`}
                     </div>
                     <div class="team-slot-info">
-                        <div class="team-slot-name">${member.pokemon ? capitalize(member.pokemon) : "+ Add Pokémon"}</div>
+                        <div class="team-slot-name">${member.pokemon ? capitalize(member.pokemon) : "Empty Slot"}</div>
                         <div class="team-slot-types">${typeBadges}</div>
                     </div>
                 </button>
@@ -1385,8 +1748,6 @@ function renderTeam() {
             const index = Number(button.closest("[data-slot-index]")?.dataset.slotIndex);
             if (team[index]?.pokemon) {
                 removePokemon(index);
-            } else {
-                replacePokemon(index);
             }
         });
     });
@@ -1398,9 +1759,6 @@ function renderTeam() {
         });
     });
 
-    if (hoveredCoverageType) {
-        applyCoverageHover(hoveredCoverageType);
-    }
 }
 
 async function calculateCoverage() {
@@ -1412,16 +1770,18 @@ async function calculateCoverage() {
     }]));
 
     const activeMembers = team.filter(member => member.pokemon);
-    await Promise.all(activeMembers.map(async member => {
-        const offensive = await getOffensiveMatchups(member.types);
+    activeMembers.forEach(member => {
+        const superEffectiveAgainst = Array.isArray(member.superEffectiveAgainst)
+            ? member.superEffectiveAgainst
+            : getSuperEffectiveAgainst(member.types || []);
         allTypes.forEach(type => {
-            const value = offensive[type];
-            if (value === 0) coverage[type].noEffect += 1;
-            else if (value > 1) coverage[type].superEffective += 1;
-            else if (value < 1) coverage[type].notVeryEffective += 1;
-            else coverage[type].neutral += 1;
+            if (superEffectiveAgainst.includes(type)) {
+                coverage[type].superEffective += 1;
+            } else {
+                coverage[type].neutral += 1;
+            }
         });
-    }));
+    });
 
     return coverage;
 }
@@ -1442,11 +1802,8 @@ async function renderCoverage() {
         return `
             <article class="coverage-card" data-coverage-type="${key}">
                 <div class="coverage-card-header">
-                    <img class="coverage-type-icon" src="${getTypeIconUrl(type.name)}" alt="${type.name} icon">
                     <span class="coverage-type" style="background:${type.color}">${type.name}</span>
-                </div>
-                <div class="coverage-badges">
-                    ${renderStatBadge("Super Effective", stats.superEffective, "super")}
+                    <span class="coverage-count">${stats.superEffective}</span>
                 </div>
             </article>
         `;
@@ -1464,19 +1821,18 @@ function schedulePlannerRefresh() {
     renderTeamSummary();
 }
 
+function scrollToAvailablePokemonBrowser() {
+    const browser = el("availablePokemonBrowser");
+    if (!browser) return;
+    browser.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 async function addPokemon(name, slotIndex) {
     const pokemon = await getPlannerPokemon(name);
     const index = Number.isInteger(slotIndex) ? slotIndex : team.findIndex(member => !member.pokemon);
     if (index < 0 || index >= team.length) return;
     team[index] = pokemon;
     saveTeamPlannerState();
-    if (plannerState.selectionTarget?.type === "team" && plannerState.selectionTarget.slotIndex === index) {
-        plannerState.selectionTarget = null;
-    }
-    const targetLabel = el("plannerActiveTarget");
-    if (targetLabel) {
-        targetLabel.textContent = plannerState.selectionTarget ? getCurrentPlannerSelectionLabel() : "Click a slot to start";
-    }
     input.value = "";
     suggestionBox.classList.add("hidden");
     suggestionBox.innerHTML = "";
@@ -1484,11 +1840,11 @@ async function addPokemon(name, slotIndex) {
     scheduleSuggestionUpdate("");
     renderTeam();
     schedulePlannerRefresh();
-}
-
-function replacePokemon(slotIndex) {
-    if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= team.length) return;
-    setPlannerSelectionTarget({ type: "team", slotIndex });
+    if (isTeamPlannerPage()) {
+        window.requestAnimationFrame(() => {
+            scrollToAvailablePokemonBrowser();
+        });
+    }
 }
 
 function removePokemon(slotIndex) {
@@ -1500,13 +1856,6 @@ function removePokemon(slotIndex) {
         game: ""
     };
     saveTeamPlannerState();
-    if (plannerState.selectionTarget?.type === "team" && plannerState.selectionTarget.slotIndex === slotIndex) {
-        plannerState.selectionTarget = null;
-    }
-    const targetLabel = el("plannerActiveTarget");
-    if (targetLabel) {
-        targetLabel.textContent = plannerState.selectionTarget ? getCurrentPlannerSelectionLabel() : "Click a slot to start";
-    }
     input.value = "";
     suggestionBox.classList.add("hidden");
     suggestionBox.innerHTML = "";
@@ -1521,13 +1870,14 @@ function renderTeamPlannerPage() {
 
     pageContent.innerHTML = `
         <section class="team-planner-page">
+            <div id="teamSummary" class="summary-grid team-summary-inline"></div>
+
             <section class="team-planner-section">
                 <div class="section-header planner-section-header">
                     <div>
                         <h3>Team Builder</h3>
-                        <p>Click a slot, then use the search bar above to pick a Pokémon.</p>
+                        <p>Click a Pokémon below to add it to the first open slot.</p>
                     </div>
-                    <div id="plannerActiveTarget" class="planner-active-target">${plannerState.selectionTarget ? getCurrentPlannerSelectionLabel() : "Click a slot to start"}</div>
                 </div>
                 <div id="teamGrid" class="team-grid"></div>
             </section>
@@ -1542,20 +1892,13 @@ function renderTeamPlannerPage() {
                 <div id="coverageGrid" class="coverage-grid"></div>
             </section>
 
-            <section class="team-planner-section">
-                <div class="section-header planner-section-header">
-                    <div>
-                        <h3>Team Summary</h3>
-                        <p>Quick overview of shared weaknesses, resistances, and immunities.</p>
-                    </div>
-                </div>
-                <div id="teamSummary" class="summary-grid"></div>
-            </section>
+            <section class="team-planner-section available-pokemon-browser" id="availablePokemonBrowser"></section>
         </section>
     `;
 
     renderTeam();
     schedulePlannerRefresh();
+    renderAvailablePokemonBrowser();
     scheduleSuggestionUpdate(input.value);
 }
 
@@ -1826,12 +2169,7 @@ async function searchPokemon() {
 
     try {
         const pokemon = await getPokemonData(name);
-        const allowedVersions = new Set(getGameVersions(currentGame));
-        const available = pokemon.game_indices.some(entry => allowedVersions.has(entry.version?.name));
-        if (!available) {
-            resultEl.innerHTML = `<div class="error">${capitalize(name)} is not available in the selected game.</div>`;
-            return;
-        }
+        const available = await getPokemonAvailability(name, currentGame);
         if (requestToken !== searchRequestToken) return;
 
         const types = pokemon.types.map(t => t.type.name);
@@ -1883,6 +2221,7 @@ async function searchPokemon() {
                 ${entry.is_hidden ? `<span>Hidden</span>` : ""}
             </div>
         `).join("");
+        const gameAvailabilityNote = available ? "" : `<div class="search-note">This Pokémon is not listed in the selected game's dex.</div>`;
 
         resultEl.innerHTML = `
             <article class="pokemon-card" data-search-token="${requestToken}">
@@ -1896,6 +2235,7 @@ async function searchPokemon() {
                             <h2>${capitalize(pokemon.name)}</h2>
                             ${displayTypes.map(createTypeBadge).join("")}
                         </div>
+                        ${gameAvailabilityNote}
                         <div class="card-row">
                             <section class="card-panel">
                                 <h3>Abilities</h3>
@@ -2037,25 +2377,10 @@ document.addEventListener("click", event => {
 suggestionBox.addEventListener("click", event => {
     const button = event.target.closest(".suggestion-item");
     if (!button) return;
-    const selectedName = normalize(button.textContent);
     input.value = button.textContent;
     suggestionBox.classList.add("hidden");
     suggestionBox.innerHTML = "";
     selectedSuggestionIndex = -1;
-
-    if (isTeamPlannerPage() && plannerState.selectionTarget) {
-        const target = plannerState.selectionTarget;
-        plannerState.selectionTarget = null;
-        const targetLabel = el("plannerActiveTarget");
-        if (targetLabel) {
-            targetLabel.textContent = "Click a slot to start";
-        }
-        if (target.type === "team") {
-            addPokemon(selectedName, target.slotIndex);
-        }
-        renderTeam();
-        return;
-    }
 
     searchPokemon();
 });
@@ -2064,23 +2389,6 @@ async function submitSearchAction() {
     const value = normalize(input.value);
     if (!value) {
         input.focus();
-        return;
-    }
-
-    if (isTeamPlannerPage() && plannerState.selectionTarget) {
-        const target = plannerState.selectionTarget;
-        plannerState.selectionTarget = null;
-        const targetLabel = el("plannerActiveTarget");
-        if (targetLabel) {
-            targetLabel.textContent = "Click a slot to start";
-        }
-        try {
-            if (target.type === "team") {
-                await addPokemon(value, target.slotIndex);
-            }
-        } catch {
-            return;
-        }
         return;
     }
 
@@ -2860,7 +3168,11 @@ if (gameSelect) {
     gameSelect.addEventListener("change", event => {
         applyGameSelection(event.target.value);
         scheduleSuggestionUpdate(input.value);
-        setActivePage(getDefaultPageForGame(currentGame));
+        if (currentPage === "team-planner") {
+            renderTeamPlannerPage();
+        } else {
+            setActivePage(getDefaultPageForGame(currentGame));
+        }
     });
 }
 loadPokemonList().catch(() => {

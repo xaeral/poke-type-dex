@@ -587,12 +587,12 @@ button#searchButton:hover{
 }
 
 .coverage-card{
-    padding:14px;
-    border-radius:16px;
+    padding:10px 12px;
+    border-radius:14px;
     background:rgba(255,255,255,.04);
     border:1px solid rgba(255,255,255,.08);
     display:grid;
-    gap:10px;
+    gap:0;
     transition:transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
     backdrop-filter:blur(10px);
 }
@@ -605,14 +605,9 @@ button#searchButton:hover{
 .coverage-card-header{
     display:flex;
     align-items:center;
+    justify-content:space-between;
     gap:10px;
-    min-height:32px;
-}
-
-.coverage-type-icon{
-    width:22px;
-    height:22px;
-    object-fit:contain;
+    min-height:auto;
 }
 
 .coverage-type{
@@ -620,15 +615,27 @@ button#searchButton:hover{
     align-items:center;
     justify-content:center;
     border-radius:999px;
-    padding:8px 12px;
+    padding:7px 11px;
     color:#fff;
     font-weight:800;
-    font-size:.88rem;
+    font-size:.84rem;
+    min-width:0;
+    white-space:nowrap;
 }
 
-.coverage-badges{
-    display:grid;
-    gap:8px;
+.coverage-count{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:2.15rem;
+    height:2.15rem;
+    padding:0 8px;
+    border-radius:999px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.12);
+    color:var(--text);
+    font-weight:800;
+    font-size:.92rem;
 }
 
 .planner-stat-badge{
@@ -676,6 +683,156 @@ button#searchButton:hover{
     gap:12px;
 }
 
+.team-summary-inline{
+    margin-bottom:18px;
+}
+
+.available-pokemon-browser{
+    display:grid;
+    gap:14px;
+}
+
+.available-pokemon-filters{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+
+.available-pokemon-filter-note{
+    color:var(--muted);
+    font-size:.88rem;
+    margin-top:-4px;
+}
+
+.available-pokemon-search-row{
+    display:flex;
+    align-items:center;
+}
+
+.available-pokemon-search{
+    width:min(280px, 100%);
+    border:1px solid var(--border);
+    border-radius:12px;
+    background:var(--surface);
+    color:var(--text);
+    padding:10px 12px;
+    font-size:.92rem;
+    outline:none;
+}
+
+.available-pokemon-search:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px var(--accent-soft);
+}
+
+.available-filter-chip{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border:none;
+    border-radius:999px;
+    padding:8px 14px;
+    background:rgba(255,255,255,.06);
+    color:var(--text);
+    font-weight:700;
+    cursor:pointer;
+    transition:transform 200ms ease, background 200ms ease, box-shadow 200ms ease, color 200ms ease;
+}
+
+.available-filter-chip:hover{
+    transform:translateY(-1px);
+}
+
+.available-filter-chip.active{
+    background:var(--chip-color, var(--accent));
+    color:#fff;
+    box-shadow:0 10px 20px rgba(0,0,0,.14);
+}
+
+.available-pokemon-grid{
+    display:grid;
+    grid-template-columns:repeat(6,minmax(0,1fr));
+    gap:12px;
+}
+
+.available-pokemon-card{
+    border:none;
+    text-align:left;
+    border-radius:18px;
+    padding:12px;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
+    box-shadow:0 10px 24px rgba(0,0,0,.12);
+    cursor:pointer;
+    transition:transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease, background 200ms ease;
+    display:grid;
+    gap:10px;
+}
+
+.available-pokemon-card:hover{
+    transform:translateY(-2px);
+    box-shadow:0 14px 30px rgba(0,0,0,.18);
+    border-color:rgba(255,255,255,.16);
+    background:rgba(255,255,255,.06);
+}
+
+.available-pokemon-card.selected{
+    transform:translateY(-3px) scale(0.98);
+    border-color:var(--accent);
+    background:rgba(255,255,255,.08);
+    box-shadow:0 0 0 2px var(--accent-soft), 0 16px 34px rgba(0,0,0,.22);
+}
+
+.available-pokemon-card.selected .available-pokemon-art{
+    background:linear-gradient(180deg, rgba(128,199,255,.22), rgba(0,0,0,.04));
+}
+
+.available-pokemon-card.selected .available-pokemon-art img{
+    transform:scale(1.06);
+    filter:drop-shadow(0 12px 18px rgba(0,0,0,.28));
+}
+
+.available-pokemon-art{
+    min-height:88px;
+    border-radius:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(0,0,0,.04));
+}
+
+.available-pokemon-art img{
+    width:100%;
+    max-width:78px;
+    height:auto;
+    object-fit:contain;
+    filter:drop-shadow(0 10px 14px rgba(0,0,0,.22));
+}
+
+.available-pokemon-name{
+    font-weight:800;
+    font-size:.94rem;
+    line-height:1.2;
+    color:var(--text);
+}
+
+.available-pokemon-types{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+}
+
+.available-pokemon-type{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:5px 9px;
+    border-radius:999px;
+    color:#fff;
+    font-size:.76rem;
+    font-weight:700;
+}
+
 .summary-card{
     padding:16px;
     border-radius:16px;
@@ -684,6 +841,8 @@ button#searchButton:hover{
     box-shadow:0 10px 24px rgba(0,0,0,.14);
     display:grid;
     gap:12px;
+    align-content:start;
+    justify-items:start;
 }
 
 .summary-card-header h4{
@@ -695,6 +854,41 @@ button#searchButton:hover{
     display:flex;
     flex-wrap:wrap;
     gap:8px;
+    align-items:flex-start;
+    align-content:flex-start;
+    justify-content:flex-start;
+}
+
+.team-summary-badge{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+}
+
+.team-summary-badge::after{
+    content:attr(data-tooltip);
+    position:absolute;
+    left:50%;
+    bottom:calc(100% + 8px);
+    transform:translateX(-50%) translateY(4px);
+    padding:6px 8px;
+    border-radius:10px;
+    background:rgba(10,15,24,.96);
+    color:#fff;
+    font-size:.78rem;
+    line-height:1.3;
+    white-space:nowrap;
+    box-shadow:0 10px 20px rgba(0,0,0,.24);
+    border:1px solid rgba(255,255,255,.08);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 160ms ease, transform 160ms ease;
+    z-index:5;
+}
+
+.team-summary-badge:hover::after{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
 }
 
 .team-summary-empty{
@@ -932,6 +1126,13 @@ button#searchButton:hover{
 .card-header h2{
     margin:0;
     font-size:2rem;
+}
+
+.search-note{
+    flex-basis:100%;
+    color:var(--muted);
+    font-size:.92rem;
+    margin-top:-2px;
 }
 
 .type-badge{
@@ -1950,13 +2151,13 @@ button#searchButton:hover{
 .adventure-marker-popout{
     position:absolute;
     transform:translate(-50%, calc(-100% - 22px));
-    width:min(420px, 72vw);
+    width:min(360px, 64vw);
     background:linear-gradient(160deg, rgba(20,28,41,.95), rgba(12,18,29,.95));
     border:1px solid rgba(255,255,255,.14);
     border-left:3px solid var(--objective-accent, var(--accent));
-    border-radius:16px;
+    border-radius:14px;
     box-shadow:0 22px 52px rgba(0,0,0,.42);
-    padding:12px;
+    padding:10px;
     z-index:6;
     pointer-events:none;
     animation:adventurePopoutIn .24s ease;
@@ -1994,39 +2195,39 @@ button#searchButton:hover{
 
 .adventure-marker-popout-title{
     margin:0;
-    font-size:1.15rem;
+    font-size:1rem;
 }
 
 .adventure-marker-popout-badges{
     display:flex;
     flex-wrap:wrap;
-    gap:8px;
-    margin-top:8px;
+    gap:6px;
+    margin-top:6px;
 }
 
 .adventure-marker-popout-description{
-    margin:10px 0 0;
+    margin:8px 0 0;
     color:var(--muted);
-    line-height:1.55;
-    font-size:0.92rem;
+    line-height:1.45;
+    font-size:0.87rem;
 }
 
 .adventure-marker-popout-meta{
     display:grid;
-    gap:6px;
-    margin-top:10px;
+    gap:5px;
+    margin-top:8px;
 }
 
 .adventure-marker-popout-row{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    gap:12px;
-    padding:8px 10px;
-    border-radius:10px;
+    gap:10px;
+    padding:6px 8px;
+    border-radius:9px;
     border:1px solid rgba(255,255,255,.08);
     background:rgba(255,255,255,.03);
-    font-size:0.9rem;
+    font-size:0.82rem;
 }
 
 .adventure-marker-popout-row span{
@@ -2034,12 +2235,13 @@ button#searchButton:hover{
 }
 
 .adventure-marker-popout-weaknesses{
-    margin-top:10px;
+    margin-top:6px;
 }
 
 .adventure-marker-popout-weaknesses h4{
     margin:0 0 6px;
-    font-size:0.92rem;
+    font-size:0.8rem;
+    line-height:1.1;
 }
 
 .adventure-marker:hover .adventure-marker-dot{
@@ -2205,6 +2407,10 @@ button#searchButton:hover{
     .team-slot-actions{
         gap:8px;
     }
+
+    .available-pokemon-grid{
+        grid-template-columns:repeat(3,minmax(0,1fr));
+    }
 }
 
 @media (max-width:450px){
@@ -2216,6 +2422,10 @@ button#searchButton:hover{
     .coverage-grid,
     .summary-grid{
         grid-template-columns:1fr;
+    }
+
+    .available-pokemon-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
     }
 }
 
