@@ -13,7 +13,10 @@ let suggestionUpdateTimer = null;
 let suggestionRequestToken = 0;
 let coverageAnalysisToken = 0;
 let availablePokemonLoadToken = 0;
+let availableSearchUpdateTimer = null;
 const suggestionDebounceMs = 80;
+const availableSearchDebounceMs = 120;
+const availableRenderBatchSize = 72;
 const teamStorageKey = "teamPlannerTeamV1";
 const availablePokemonState = {
     types: [],
@@ -1075,6 +1078,8 @@ async function getAvailablePokemonCatalog(gameKey) {
                     const pokemon = await getPokemonData(name);
                     return {
                         name: pokemon.name,
+                        searchName: normalize(pokemon.name),
+                        typeKeys: pokemon.types.map(entry => entry.type.name.toLowerCase()),
                         types: pokemon.types.map(entry => capitalize(entry.type.name)),
                         sprite: pokemon.sprites.other?.["official-artwork"]?.front_default || pokemon.sprites.front_default || ""
                     };
@@ -1100,7 +1105,8 @@ function getAvailablePokemonProgressState(gameKey) {
             catalog: [],
             loading: false,
             promise: null,
-            token: 0
+            token: 0,
+            lastRefreshAt: 0
         });
     }
 
@@ -1115,6 +1121,7 @@ async function getAvailablePokemonCatalogProgress(gameKey) {
     if (progressState.loading && progressState.promise) return progressState.promise;
 
     progressState.loading = true;
+    progressState.lastRefreshAt = 0;
     progressState.token += 1;
     const runToken = progressState.token;
 
@@ -1177,6 +1184,8 @@ async function getAvailablePokemonCatalogProgress(gameKey) {
                     const pokemon = await getPokemonData(name);
                     return {
                         name: pokemon.name,
+                        searchName: normalize(pokemon.name),
+                        typeKeys: pokemon.types.map(entry => entry.type.name.toLowerCase()),
                         types: pokemon.types.map(entry => capitalize(entry.type.name)),
                         sprite: pokemon.sprites.other?.["official-artwork"]?.front_default || pokemon.sprites.front_default || ""
                     };
@@ -1189,7 +1198,9 @@ async function getAvailablePokemonCatalogProgress(gameKey) {
             catalog.push(...cleanBatch);
             if (runToken === progressState.token && cleanBatch.length) {
                 progressState.catalog = catalog.slice();
-                if (currentGame === cacheKey) {
+                const shouldRefresh = Date.now() - progressState.lastRefreshAt > 120 || index + pokemonBatchSize >= varietyNames.length;
+                if (currentGame === cacheKey && shouldRefresh) {
+                    progressState.lastRefreshAt = Date.now();
                     updateAvailablePokemonBrowser();
                 }
             }
@@ -1225,12 +1236,32 @@ function renderAvailablePokemonCard(entry) {
     return `
         <button type="button" class="available-pokemon-card" data-pokemon="${entry.name}" aria-label="Add ${formatPokemonName(entry.name)} to team">
             <div class="available-pokemon-art">
-                <img src="${entry.sprite}" alt="${formatPokemonName(entry.name)} artwork">
+                <img src="${entry.sprite}" alt="${formatPokemonName(entry.name)} artwork" loading="lazy" decoding="async">
             </div>
             <div class="available-pokemon-name">${formatPokemonName(entry.name)}</div>
             <div class="available-pokemon-types">${typesMarkup}</div>
         </button>
     `;
+}
+
+function renderAvailablePokemonCardsInBatches(grid, entries, token) {
+    grid.innerHTML = "";
+    let index = 0;
+
+    const paintNextBatch = () => {
+        if (token !== availablePokemonLoadToken || !grid.isConnected) return;
+        const batch = entries.slice(index, index + availableRenderBatchSize);
+        if (!batch.length) return;
+
+        grid.insertAdjacentHTML("beforeend", batch.map(renderAvailablePokemonCard).join(""));
+        index += batch.length;
+
+        if (index < entries.length) {
+            window.requestAnimationFrame(paintNextBatch);
+        }
+    };
+
+    paintNextBatch();
 }
 
 async function updateAvailablePokemonBrowser() {
@@ -1250,17 +1281,21 @@ async function updateAvailablePokemonBrowser() {
         if (token !== availablePokemonLoadToken || !grid.isConnected) return;
 
         const filtered = catalog.filter(entry => {
-            const matchesName = !searchQuery || normalize(entry.name).includes(searchQuery);
-            const matchesTypes = selectedTypes.length === 0 || entry.types.some(type => selectedTypes.includes(type.toLowerCase()));
+            const matchesName = !searchQuery || (entry.searchName || normalize(entry.name)).includes(searchQuery);
+            const typeKeys = entry.typeKeys || entry.types.map(type => type.toLowerCase());
+            const matchesTypes = selectedTypes.length === 0 || typeKeys.some(type => selectedTypes.includes(type));
             return matchesName && matchesTypes;
         });
 
-        count.textContent = `${filtered.length} available`;
-        grid.innerHTML = filtered.length
-            ? filtered.map(renderAvailablePokemonCard).join("")
-            : progressState.loading
-                ? `<div class="planner-loading">Loading available Pokémon...</div>`
-                : `<div class="planner-loading">No Pokémon match this type filter.</div>`;
+        count.textContent = progressState.loading ? `${filtered.length}+ available` : `${filtered.length} available`;
+        if (filtered.length) {
+            renderAvailablePokemonCardsInBatches(grid, filtered, token);
+            return;
+        }
+
+        grid.innerHTML = progressState.loading
+            ? `<div class="planner-loading">Loading available Pokémon...</div>`
+            : `<div class="planner-loading">No Pokémon match this type filter.</div>`;
     };
 
     renderCatalog(progressState.catalog);
@@ -1303,8 +1338,12 @@ function renderAvailablePokemonBrowser() {
     const searchInput = el("availablePokemonSearch");
     if (searchInput) {
         searchInput.addEventListener("input", event => {
-            availablePokemonState.search = event.target.value || "";
-            updateAvailablePokemonBrowser();
+            const value = event.target.value || "";
+            window.clearTimeout(availableSearchUpdateTimer);
+            availableSearchUpdateTimer = window.setTimeout(() => {
+                availablePokemonState.search = value;
+                updateAvailablePokemonBrowser();
+            }, availableSearchDebounceMs);
         });
     }
 
