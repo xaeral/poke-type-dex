@@ -937,6 +937,7 @@ function normalizeTeamMember(member) {
 function saveTeamPlannerState() {
     try {
         localStorage.setItem(teamStorageKey, JSON.stringify(team.map(normalizeTeamMember)));
+        sessionStorage.setItem(teamStorageKey, JSON.stringify(team.map(normalizeTeamMember)));
     } catch {
         // Ignore storage failures and keep the planner functional.
     }
@@ -944,7 +945,7 @@ function saveTeamPlannerState() {
 
 function loadTeamPlannerState() {
     try {
-        const stored = localStorage.getItem(teamStorageKey);
+        const stored = localStorage.getItem(teamStorageKey) || sessionStorage.getItem(teamStorageKey);
         if (!stored) return;
 
         const parsed = JSON.parse(stored);
@@ -1357,10 +1358,12 @@ function renderTeam() {
                 <button class="team-slot-body" type="button" data-action="choose-slot" aria-label="${label}">
                     <div class="team-slot-figure">
                         <div class="team-slot-ball-shell ${member.pokemon ? "filled" : "empty"}" style="--primary-color:${primary}; --secondary-color:${secondary};">
-                            <span class="team-slot-half top" style="background-color:${primary};background-image:none;"></span>
-                            <span class="team-slot-half bottom" style="background-color:${secondary};background-image:none;"></span>
-                            <span class="team-slot-band" aria-hidden="true"></span>
-                            <span class="team-slot-center-button" aria-hidden="true">${member.pokemon ? "" : "+"}</span>
+                            <div class="team-slot-ball-surface" aria-hidden="true">
+                                <span class="team-slot-half top" style="background-color:${primary};background-image:none;"></span>
+                                <span class="team-slot-half bottom" style="background-color:${secondary};background-image:none;"></span>
+                                <span class="team-slot-band"></span>
+                                <span class="team-slot-center-button">${member.pokemon ? "" : "+"}</span>
+                            </div>
                             ${member.sprite ? `<img class="team-slot-sprite" src="${member.sprite}" alt="${capitalize(member.pokemon)} artwork">` : ""}
                         </div>
                         ${member.pokemon ? "" : `<div class="team-slot-plus">Add Pokémon</div>`}
@@ -2846,6 +2849,12 @@ document.addEventListener('click', (e) => {
 loadTheme();
 loadAdventureProgress();
 loadTeamPlannerState();
+window.addEventListener("beforeunload", saveTeamPlannerState);
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+        saveTeamPlannerState();
+    }
+});
 applyGameSelection(currentGame, { rebuildPage: false });
 if (gameSelect) {
     gameSelect.addEventListener("change", event => {
