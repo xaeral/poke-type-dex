@@ -4,11 +4,13 @@ const typeDataCache = new Map();
 const abilityDataCache = new Map();
 const speciesDataCache = new Map();
 const evolutionChainCache = new Map();
+const pokemonAvailabilityCache = new Map();
 let searchRequestToken = 0;
 let suggestionUpdateTimer = null;
 let suggestionRequestToken = 0;
 let coverageAnalysisToken = 0;
 const suggestionDebounceMs = 80;
+const teamStorageKey = "teamPlannerTeamV1";
 const allTypes = [
     "normal","fire","water","electric","grass","ice",
     "fighting","poison","ground","flying","psychic",
@@ -918,27 +920,71 @@ async function getPokemonData(name) {
     return data;
 }
 
+function normalizeTeamMember(member) {
+    if (!member || typeof member !== "object") return null;
+    if (!member.pokemon) {
+        return { pokemon: null, types: [], sprite: "", game: "" };
+    }
+
+    return {
+        pokemon: typeof member.pokemon === "string" ? member.pokemon : null,
+        types: Array.isArray(member.types) ? member.types.filter(type => typeof type === "string") : [],
+        sprite: typeof member.sprite === "string" ? member.sprite : "",
+        game: typeof member.game === "string" ? member.game : ""
+    };
+}
+
+function saveTeamPlannerState() {
+    try {
+        localStorage.setItem(teamStorageKey, JSON.stringify(team.map(normalizeTeamMember)));
+    } catch {
+        // Ignore storage failures and keep the planner functional.
+    }
+}
+
+function loadTeamPlannerState() {
+    try {
+        const stored = localStorage.getItem(teamStorageKey);
+        if (!stored) return;
+
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed) || parsed.length !== team.length) return;
+
+        parsed.forEach((member, index) => {
+            const normalized = normalizeTeamMember(member);
+            if (!normalized) return;
+            team[index] = normalized;
+        });
+    } catch {
+        // Ignore malformed storage and fall back to a blank team.
+    }
+}
+
 async function getPokemonAvailability(name, gameKey) {
+    const cacheKey = `${normalize(name)}::${gameKey}`;
+    if (pokemonAvailabilityCache.has(cacheKey)) return pokemonAvailabilityCache.get(cacheKey);
+
     const pokemon = await getPokemonData(name);
     const allowedVersions = new Set(getGameVersions(gameKey));
-    return pokemon.game_indices.some(entry => allowedVersions.has(entry.version?.name));
+    const available = pokemon.game_indices.some(entry => allowedVersions.has(entry.version?.name));
+    pokemonAvailabilityCache.set(cacheKey, available);
+    return available;
 }
 
 async function filterSuggestionsByGame(matches) {
     if (!currentGame) return matches.slice(0, 12);
 
-    const filtered = [];
-    for (const item of matches.slice(0, 40)) {
-        try {
-            if (await getPokemonAvailability(item.name, currentGame)) {
-                filtered.push(item);
-            }
-        } catch {
-            return matches.slice(0, 12);
-        }
-        if (filtered.length >= 12) break;
+    const candidates = matches.slice(0, 12);
+    try {
+        const results = await Promise.all(candidates.map(async item => ({
+            item,
+            available: await getPokemonAvailability(item.name, currentGame)
+        })));
+        const filtered = results.filter(result => result.available).map(result => result.item);
+        return filtered.length ? filtered : candidates;
+    } catch {
+        return matches.slice(0, 12);
     }
-    return filtered.length ? filtered : matches.slice(0, 12);
 }
 
 function buildPokemonRecord(pokemon) {
@@ -1420,6 +1466,7 @@ async function addPokemon(name, slotIndex) {
     const index = Number.isInteger(slotIndex) ? slotIndex : team.findIndex(member => !member.pokemon);
     if (index < 0 || index >= team.length) return;
     team[index] = pokemon;
+    saveTeamPlannerState();
     if (plannerState.selectionTarget?.type === "team" && plannerState.selectionTarget.slotIndex === index) {
         plannerState.selectionTarget = null;
     }
@@ -1449,6 +1496,7 @@ function removePokemon(slotIndex) {
         sprite: "",
         game: ""
     };
+    saveTeamPlannerState();
     if (plannerState.selectionTarget?.type === "team" && plannerState.selectionTarget.slotIndex === slotIndex) {
         plannerState.selectionTarget = null;
     }
@@ -1774,12 +1822,13 @@ async function searchPokemon() {
     suggestionBox.innerHTML = "";
 
     try {
-        const available = await getPokemonAvailability(name, currentGame);
+        const pokemon = await getPokemonData(name);
+        const allowedVersions = new Set(getGameVersions(currentGame));
+        const available = pokemon.game_indices.some(entry => allowedVersions.has(entry.version?.name));
         if (!available) {
             resultEl.innerHTML = `<div class="error">${capitalize(name)} is not available in the selected game.</div>`;
             return;
         }
-        const pokemon = await fetchPokemon(name);
         if (requestToken !== searchRequestToken) return;
 
         const types = pokemon.types.map(t => t.type.name);
@@ -2796,6 +2845,7 @@ document.addEventListener('click', (e) => {
 // initialize app
 loadTheme();
 loadAdventureProgress();
+loadTeamPlannerState();
 applyGameSelection(currentGame, { rebuildPage: false });
 if (gameSelect) {
     gameSelect.addEventListener("change", event => {
