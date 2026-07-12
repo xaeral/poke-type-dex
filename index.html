@@ -4,11 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pokémon Type Dex</title>
-<link rel="icon" type="image/png" href="./Images/pokeball.png?v=20260711x">
-<link rel="stylesheet" href="style.css?v=20260711x">
+<link rel="icon" type="image/png" href="./Images/pokeball.png?v=20260712y">
+<link rel="stylesheet" href="style.css?v=20260712y">
 </head>
 <body>
 <div class="toolbar">
+    <label class="toolbar-select" aria-label="Game selector">
+        <span>Game</span>
+        <select id="gameSelect" aria-label="Game selector">
+            <option value="scarlet-violet">Scarlet / Violet</option>
+            <option value="legends-arceus">Legends Arceus</option>
+            <option value="sword-shield">Sword / Shield</option>
+            <option value="brilliant-diamond-shining-pearl">Brilliant Diamond / Shining Pearl</option>
+            <option value="lets-go-pikachu-eevee">Let's Go Pikachu / Eevee</option>
+        </select>
+    </label>
     <button id="themeToggle" type="button">Dark Mode</button>
 </div>
 
@@ -39,14 +49,15 @@
     <nav class="main-nav">
         <button class="nav-item" data-page="adventure">Adventure Guide</button>
         <button class="nav-item active" data-page="reference">Type Reference</button>
+        <button class="nav-item" data-page="team-planner">Team Planner</button>
         <button class="nav-item" data-page="tera">Tera Crystals</button>
     </nav>
 
     <div id="pageContent" class="page-content"></div>
 
-    <footer class="build-tag" aria-label="Build information">Build 20260711x</footer>
+    <footer class="build-tag" aria-label="Build information">Build 20260712y</footer>
 </div>
 
-<script src="script.js?v=20260711x"></script>
+<script src="script.js?v=20260712y"></script>
 </body>
 </html>

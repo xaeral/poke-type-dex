@@ -1,16 +1,21 @@
 const pokemonNames = [];
+const pokemonDataCache = new Map();
 const typeDataCache = new Map();
 const abilityDataCache = new Map();
 const speciesDataCache = new Map();
 const evolutionChainCache = new Map();
 let searchRequestToken = 0;
 let suggestionUpdateTimer = null;
+let suggestionRequestToken = 0;
+let coverageAnalysisToken = 0;
 const suggestionDebounceMs = 80;
 const allTypes = [
     "normal","fire","water","electric","grass","ice",
     "fighting","poison","ground","flying","psychic",
     "bug","rock","ghost","dragon","dark","steel","fairy"
 ];
+
+const FLYING_TYPE_COLOR = "#A98FF3";
 
 const types = [
     {
@@ -106,7 +111,7 @@ const types = [
     },
     {
         name: "Flying",
-        color: "#A98FF3",
+        color: FLYING_TYPE_COLOR,
         weak: ["Electric", "Ice", "Rock"],
         resist: ["Grass", "Fighting", "Bug"],
         immune: ["Ground"],
@@ -201,7 +206,36 @@ const input = document.getElementById("pokemonInput");
 const resultEl = document.getElementById("result");
 const searchButton = document.getElementById("searchButton");
 const themeToggle = document.getElementById("themeToggle");
+const gameSelect = document.getElementById("gameSelect");
 const pageContent = document.getElementById("pageContent");
+const team = Array.from({ length: 6 }, () => ({
+    pokemon: null,
+    types: [],
+    sprite: "",
+    game: ""
+}));
+const plannerGameOptions = [
+    { key: "scarlet-violet", label: "Scarlet / Violet" },
+    { key: "legends-arceus", label: "Legends Arceus" },
+    { key: "sword-shield", label: "Sword / Shield" },
+    { key: "brilliant-diamond-shining-pearl", label: "Brilliant Diamond / Shining Pearl" },
+    { key: "lets-go-pikachu-eevee", label: "Let's Go Pikachu / Eevee" }
+];
+const plannerGameVersions = {
+    "scarlet-violet": ["scarlet", "violet"],
+    "legends-arceus": ["legends-arceus"],
+    "sword-shield": ["sword", "shield"],
+    "brilliant-diamond-shining-pearl": ["brilliant-diamond", "shining-pearl"],
+    "lets-go-pikachu-eevee": ["lets-go-pikachu", "lets-go-eevee"]
+};
+const plannerState = {
+    game: "scarlet-violet",
+    selectionTarget: null,
+};
+let currentPage = "reference";
+let coverageHoverToken = 0;
+let hoveredCoverageType = null;
+let currentGame = localStorage.getItem("pokemonGame") || "scarlet-violet";
 
 function el(id){ return document.getElementById(id); }
 function q(selector){ return document.querySelector(selector); }
@@ -254,6 +288,8 @@ const typeColorMap = types.reduce((map, type) => {
     map[type.name.toLowerCase()] = type.color;
     return map;
 }, {});
+
+typeColorMap.flying = FLYING_TYPE_COLOR;
 
 const objectiveCategoryMeta = {
     Gym: { color: "#4ea1ff", icon: "G", shortLabel: "Gym" },
@@ -801,8 +837,144 @@ function updateSuggestionSelection(index) {
     });
 }
 
+function isTeamPlannerPage() {
+    return currentPage === "team-planner";
+}
+
+function getCurrentPlannerSelectionLabel() {
+    if (!plannerState.selectionTarget) return "";
+    return `Replacing Slot ${plannerState.selectionTarget.slotIndex + 1}`;
+}
+
+function getTypeColor(name) {
+    return typeColorMap[String(name || "").toLowerCase()] || "#6b7280";
+}
+
+function getGameVersions(gameKey) {
+    return plannerGameVersions[gameKey] || [];
+}
+
+function isScarletVioletGame(gameKey = currentGame) {
+    return gameKey === "scarlet-violet";
+}
+
+function getDefaultPageForGame(gameKey = currentGame) {
+    return isScarletVioletGame(gameKey) ? "adventure" : "reference";
+}
+
+function saveSelectedGame(gameKey) {
+    localStorage.setItem("pokemonGame", gameKey);
+}
+
+function setGameSelectValue(gameKey) {
+    if (gameSelect && gameSelect.value !== gameKey) {
+        gameSelect.value = gameKey;
+    }
+}
+
+function syncAdventureVisibility(gameKey = currentGame) {
+    const adventureButton = document.querySelector('.main-nav .nav-item[data-page="adventure"]');
+    if (adventureButton) {
+        adventureButton.classList.toggle("hidden", !isScarletVioletGame(gameKey));
+    }
+}
+
+function applyGameSelection(gameKey, options = {}) {
+    const nextGame = gameKey || "scarlet-violet";
+    currentGame = nextGame;
+    plannerState.game = nextGame;
+    saveSelectedGame(nextGame);
+    setGameSelectValue(nextGame);
+    syncAdventureVisibility(nextGame);
+    if (options.rebuildPage !== false) {
+        const desiredPage = getDefaultPageForGame(nextGame);
+        if (!isScarletVioletGame(nextGame) && currentPage === "adventure") {
+            setActivePage(desiredPage);
+        }
+    }
+}
+
+function setPlannerSelectionTarget(target) {
+    plannerState.selectionTarget = target;
+    if (!isTeamPlannerPage()) return;
+    input.focus();
+    scheduleSuggestionUpdate(input.value);
+    const targetLabel = el("plannerActiveTarget");
+    if (targetLabel) {
+        targetLabel.textContent = getCurrentPlannerSelectionLabel();
+    }
+    renderTeam();
+}
+
+async function getPokemonData(name) {
+    const key = normalize(name);
+    if (pokemonDataCache.has(key)) return pokemonDataCache.get(key);
+    const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${key}`);
+    if (!response.ok) {
+        throw new Error("Pokémon not found");
+    }
+    const data = await response.json();
+    pokemonDataCache.set(key, data);
+    return data;
+}
+
+async function getPokemonAvailability(name, gameKey) {
+    const pokemon = await getPokemonData(name);
+    const allowedVersions = new Set(getGameVersions(gameKey));
+    return pokemon.game_indices.some(entry => allowedVersions.has(entry.version?.name));
+}
+
+async function filterSuggestionsByGame(matches) {
+    if (!currentGame) return matches.slice(0, 12);
+
+    const filtered = [];
+    for (const item of matches.slice(0, 40)) {
+        try {
+            if (await getPokemonAvailability(item.name, currentGame)) {
+                filtered.push(item);
+            }
+        } catch {
+            return matches.slice(0, 12);
+        }
+        if (filtered.length >= 12) break;
+    }
+    return filtered.length ? filtered : matches.slice(0, 12);
+}
+
+function buildPokemonRecord(pokemon) {
+    return {
+        pokemon: pokemon.name,
+        types: pokemon.types.map(entry => capitalize(entry.type.name)),
+        sprite: pokemon.sprites.other?.["official-artwork"]?.front_default || pokemon.sprites.front_default || "",
+        game: plannerState.game
+    };
+}
+
+function getCombinedMultiplier(lookup, types) {
+    return types.reduce((total, type) => total * (lookup[String(type).toLowerCase()] || 1), 1);
+}
+
+function getMatchupSummary(multiplier, offense = true) {
+    if (multiplier === 0) return offense ? "No Effect" : "Immune";
+    if (multiplier > 1) return offense ? "Super Effective" : "Weak";
+    if (multiplier < 1) return offense ? "Not Very Effective" : "Resists";
+    return "Neutral";
+}
+
+function getMatchupVariant(multiplier) {
+    if (multiplier === 0) return "immune";
+    if (multiplier > 1) return "super";
+    if (multiplier < 1) return "resist";
+    return "neutral";
+}
+
+function renderStatBadge(label, value, variant) {
+    return `<span class="planner-stat-badge planner-stat-${variant}">${label}<strong>${value}</strong></span>`;
+}
+
 function updateSuggestions(search) {
     const query = normalize(search);
+    const token = ++suggestionRequestToken;
 
     if (!query) {
         selectedSuggestionIndex = -1;
@@ -815,13 +987,27 @@ function updateSuggestions(search) {
         .map(name => ({ name, score: fuzzyScore(query, name) }))
         .filter(item => item.score > 0)
         .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
-        .slice(0, 12);
+        .slice(0, 40);
 
-    suggestionBox.classList.remove("hidden");
-    suggestionBox.innerHTML = matches.length
-        ? matches.map(item => `<button type="button" class="suggestion-item">${capitalize(item.name)}</button>`).join("")
-        : `<div class="suggestion-empty">No matches found</div>`;
-    selectedSuggestionIndex = -1;
+    filterSuggestionsByGame(matches)
+        .then(visibleMatches => {
+            if (token !== suggestionRequestToken) return;
+
+            suggestionBox.classList.remove("hidden");
+            suggestionBox.innerHTML = visibleMatches.length
+                ? visibleMatches.map(item => `<button type="button" class="suggestion-item">${capitalize(item.name)}</button>`).join("")
+                : `<div class="suggestion-empty">No matches found</div>`;
+            selectedSuggestionIndex = -1;
+        })
+        .catch(() => {
+            if (token !== suggestionRequestToken) return;
+
+            suggestionBox.classList.remove("hidden");
+            suggestionBox.innerHTML = matches.slice(0, 12)
+                .map(item => `<button type="button" class="suggestion-item">${capitalize(item.name)}</button>`)
+                .join("");
+            selectedSuggestionIndex = -1;
+        });
 }
 
 function scheduleSuggestionUpdate(value) {
@@ -842,11 +1028,7 @@ async function loadPokemonList() {
 }
 
 async function fetchPokemon(name) {
-    const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
-    if (!response.ok) {
-        throw new Error("Pokémon not found");
-    }
-    return response.json();
+    return getPokemonData(name);
 }
 
 async function getTypeData(type) {
@@ -955,6 +1137,375 @@ function renderEffectivenessBlock(title, items) {
             </div>
         </div>
     `;
+}
+
+function getSlotColors(types) {
+    return {
+        primary: getTypeColor(types[0] || "normal"),
+        secondary: getTypeColor(types[1] || types[0] || "normal")
+    };
+}
+
+function formatHoverTooltip(typeName, offenseValue, defenseValue) {
+    const target = capitalize(typeName);
+    if (defenseValue === 0) return `Immune to ${target}`;
+    if (offenseValue > 1) return `Super Effective against ${target}`;
+    if (defenseValue >= 4) return `4× Weak to ${target}`;
+    if (defenseValue >= 2) return `Weak to ${target}`;
+    if (defenseValue === 0.25) return `4× Resists ${target}`;
+    if (defenseValue === 0.5) return `Resists ${target}`;
+    return `Neutral against ${target}`;
+}
+
+function getHoverTier(offenseValue, defenseValue) {
+    if (offenseValue > 1 && defenseValue <= 1) return "best";
+    if (defenseValue === 0 || defenseValue === 0.25 || defenseValue === 0.5) return "best";
+    if (defenseValue >= 4) return "very-poor";
+    if (defenseValue >= 2 || offenseValue < 1) return "poor";
+    return "neutral";
+}
+
+function getTeamSummary() {
+    const weaknesses = new Set();
+    const resistances = new Set();
+    const immunities = new Set();
+
+    return Promise.all(team.map(async member => {
+        if (!member.pokemon) return null;
+        const defense = await getTypeEffectiveness(member.types);
+        return defense;
+    })).then(results => {
+        results.forEach(defense => {
+            if (!defense) return;
+            Object.entries(defense).forEach(([type, value]) => {
+                if (value === 0) {
+                    immunities.add(type);
+                } else if (value > 1) {
+                    weaknesses.add(type);
+                } else if (value < 1) {
+                    resistances.add(type);
+                }
+            });
+        });
+
+        return {
+            weaknesses: Array.from(weaknesses),
+            resistances: Array.from(resistances),
+            immunities: Array.from(immunities)
+        };
+    });
+}
+
+function renderTypeBadgeList(typeNames, emptyLabel = "None") {
+    return typeNames.length
+        ? typeNames.map(type => createTypeBadge(type)).join("")
+        : `<span class="team-summary-empty">${emptyLabel}</span>`;
+}
+
+async function renderTeamSummary() {
+    const summaryRoot = el("teamSummary");
+    if (!summaryRoot) return;
+
+    summaryRoot.innerHTML = `<div class="planner-loading">Calculating team summary...</div>`;
+    const summary = await getTeamSummary();
+    if (!summaryRoot.isConnected) return;
+
+    summaryRoot.innerHTML = `
+        <article class="summary-card">
+            <div class="summary-card-header">
+                <h4>Team Weaknesses</h4>
+            </div>
+            <div class="summary-badges">${renderTypeBadgeList(summary.weaknesses)}</div>
+        </article>
+        <article class="summary-card">
+            <div class="summary-card-header">
+                <h4>Team Resistances</h4>
+            </div>
+            <div class="summary-badges">${renderTypeBadgeList(summary.resistances)}</div>
+        </article>
+        <article class="summary-card">
+            <div class="summary-card-header">
+                <h4>Team Immunities</h4>
+            </div>
+            <div class="summary-badges">${renderTypeBadgeList(summary.immunities)}</div>
+        </article>
+    `;
+}
+
+function clearCoverageHover() {
+    hoveredCoverageType = null;
+    document.querySelectorAll(".team-slot").forEach(card => {
+        card.classList.remove("coverage-best", "coverage-poor", "coverage-very-poor");
+        card.removeAttribute("data-tooltip");
+    });
+}
+
+async function applyCoverageHover(typeName) {
+    hoveredCoverageType = typeName;
+    const token = ++coverageHoverToken;
+    const activeMembers = team.map(async member => {
+        if (!member.pokemon) return null;
+        const offense = await getOffensiveMatchups(member.types);
+        const defense = await getTypeEffectiveness(member.types);
+        return {
+            name: member.pokemon,
+            offenseValue: offense[typeName],
+            defenseValue: defense[typeName]
+        };
+    });
+
+    const results = await Promise.all(activeMembers);
+    if (token !== coverageHoverToken) return;
+
+    const cards = Array.from(document.querySelectorAll(".team-slot"));
+    cards.forEach(card => {
+        card.classList.remove("coverage-best", "coverage-poor", "coverage-very-poor");
+        card.removeAttribute("data-tooltip");
+    });
+
+    const bestScore = results.reduce((highest, result) => {
+        if (!result) return highest;
+        const score = result.offenseValue > 1 ? 3 : result.defenseValue === 0 ? 3 : result.defenseValue === 0.25 ? 2 : result.defenseValue === 0.5 ? 1 : 0;
+        return Math.max(highest, score);
+    }, -1);
+
+    results.forEach((result, index) => {
+        const card = cards[index];
+        if (!card || !result) return;
+
+        const tier = getHoverTier(result.offenseValue, result.defenseValue);
+        const tooltip = formatHoverTooltip(typeName, result.offenseValue, result.defenseValue);
+        card.dataset.tooltip = tooltip;
+
+        if (tier === "best" && ((result.offenseValue > 1 ? 3 : 0) >= bestScore || (result.defenseValue <= 0.5 && bestScore <= 3))) {
+            card.classList.add("coverage-best");
+        } else if (tier === "very-poor") {
+            card.classList.add("coverage-very-poor");
+        } else if (tier === "poor") {
+            card.classList.add("coverage-poor");
+        }
+    });
+}
+
+async function getPlannerPokemon(name) {
+    const pokemon = await getPokemonData(name);
+    return buildPokemonRecord(pokemon);
+}
+
+function renderTeam() {
+    const grid = el("teamGrid");
+    if (!grid) return;
+
+    grid.innerHTML = team.map((member, index) => {
+        const types = member.types || [];
+        const { primary, secondary } = getSlotColors(types);
+        const isActiveTarget = plannerState.selectionTarget?.type === "team" && plannerState.selectionTarget.slotIndex === index;
+        const slotClass = ["team-slot", member.pokemon ? "filled" : "empty", isActiveTarget ? "targeted" : ""].filter(Boolean).join(" ");
+        const typeBadges = types.length
+            ? types.map(type => `<span class="team-slot-type" style="background:${getTypeColor(type)}">${type}</span>`).join("")
+            : `<span class="team-slot-type muted">No types</span>`;
+        const label = member.pokemon ? `Remove ${capitalize(member.pokemon)} from team` : `Add Pokémon to slot ${index + 1}`;
+
+        return `
+            <article class="${slotClass}" data-slot-index="${index}">
+                <button class="team-slot-body" type="button" data-action="choose-slot" aria-label="${label}">
+                    <div class="team-slot-figure">
+                        <div class="team-slot-ball-shell ${member.pokemon ? "filled" : "empty"}" style="--primary-color:${primary}; --secondary-color:${secondary};">
+                            <span class="team-slot-half top" style="background-color:${primary};background-image:none;"></span>
+                            <span class="team-slot-half bottom" style="background-color:${secondary};background-image:none;"></span>
+                            <span class="team-slot-band" aria-hidden="true"></span>
+                            <span class="team-slot-center-button" aria-hidden="true">${member.pokemon ? "" : "+"}</span>
+                            ${member.sprite ? `<img class="team-slot-sprite" src="${member.sprite}" alt="${capitalize(member.pokemon)} artwork">` : ""}
+                        </div>
+                        ${member.pokemon ? "" : `<div class="team-slot-plus">Add Pokémon</div>`}
+                    </div>
+                    <div class="team-slot-info">
+                        <div class="team-slot-name">${member.pokemon ? capitalize(member.pokemon) : "+ Add Pokémon"}</div>
+                        <div class="team-slot-types">${typeBadges}</div>
+                    </div>
+                </button>
+                <div class="team-slot-actions">
+                    <button type="button" class="team-slot-action ghost" data-action="remove-slot" ${member.pokemon ? "" : "disabled"}>Remove Pokémon</button>
+                </div>
+            </article>
+        `;
+    }).join("");
+
+    grid.querySelectorAll("[data-action='choose-slot']").forEach(button => {
+        button.addEventListener("click", () => {
+            const index = Number(button.closest("[data-slot-index]")?.dataset.slotIndex);
+            if (team[index]?.pokemon) {
+                removePokemon(index);
+            } else {
+                replacePokemon(index);
+            }
+        });
+    });
+
+    grid.querySelectorAll("[data-action='remove-slot']").forEach(button => {
+        button.addEventListener("click", () => {
+            const index = Number(button.closest("[data-slot-index]")?.dataset.slotIndex);
+            removePokemon(index);
+        });
+    });
+
+    if (hoveredCoverageType) {
+        applyCoverageHover(hoveredCoverageType);
+    }
+}
+
+async function calculateCoverage() {
+    const coverage = Object.fromEntries(allTypes.map(type => [type, {
+        superEffective: 0,
+        neutral: 0,
+        notVeryEffective: 0,
+        noEffect: 0
+    }]));
+
+    const activeMembers = team.filter(member => member.pokemon);
+    await Promise.all(activeMembers.map(async member => {
+        const offensive = await getOffensiveMatchups(member.types);
+        allTypes.forEach(type => {
+            const value = offensive[type];
+            if (value === 0) coverage[type].noEffect += 1;
+            else if (value > 1) coverage[type].superEffective += 1;
+            else if (value < 1) coverage[type].notVeryEffective += 1;
+            else coverage[type].neutral += 1;
+        });
+    }));
+
+    return coverage;
+}
+
+async function renderCoverage() {
+    const coverageGrid = el("coverageGrid");
+    if (!coverageGrid) return;
+
+    const token = ++coverageAnalysisToken;
+    coverageGrid.innerHTML = `<div class="planner-loading">Calculating coverage...</div>`;
+
+    const coverage = await calculateCoverage();
+    if (token !== coverageAnalysisToken) return;
+
+    coverageGrid.innerHTML = types.map(type => {
+        const key = type.name.toLowerCase();
+        const stats = coverage[key] || { superEffective: 0, neutral: 0, notVeryEffective: 0, noEffect: 0 };
+        return `
+            <article class="coverage-card" data-coverage-type="${key}">
+                <div class="coverage-card-header">
+                    <img class="coverage-type-icon" src="${getTypeIconUrl(type.name)}" alt="${type.name} icon">
+                    <span class="coverage-type" style="background:${type.color}">${type.name}</span>
+                </div>
+                <div class="coverage-badges">
+                    ${renderStatBadge("Super Effective", stats.superEffective, "super")}
+                </div>
+            </article>
+        `;
+    }).join("");
+
+    coverageGrid.querySelectorAll(".coverage-card").forEach(card => {
+        const typeName = card.dataset.coverageType;
+        card.addEventListener("mouseenter", () => applyCoverageHover(typeName));
+        card.addEventListener("mouseleave", () => clearCoverageHover());
+    });
+}
+
+function schedulePlannerRefresh() {
+    renderCoverage();
+    renderTeamSummary();
+}
+
+async function addPokemon(name, slotIndex) {
+    const pokemon = await getPlannerPokemon(name);
+    const index = Number.isInteger(slotIndex) ? slotIndex : team.findIndex(member => !member.pokemon);
+    if (index < 0 || index >= team.length) return;
+    team[index] = pokemon;
+    if (plannerState.selectionTarget?.type === "team" && plannerState.selectionTarget.slotIndex === index) {
+        plannerState.selectionTarget = null;
+    }
+    const targetLabel = el("plannerActiveTarget");
+    if (targetLabel) {
+        targetLabel.textContent = plannerState.selectionTarget ? getCurrentPlannerSelectionLabel() : "Click a slot to start";
+    }
+    input.value = "";
+    suggestionBox.classList.add("hidden");
+    suggestionBox.innerHTML = "";
+    selectedSuggestionIndex = -1;
+    scheduleSuggestionUpdate("");
+    renderTeam();
+    schedulePlannerRefresh();
+}
+
+function replacePokemon(slotIndex) {
+    if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= team.length) return;
+    setPlannerSelectionTarget({ type: "team", slotIndex });
+}
+
+function removePokemon(slotIndex) {
+    if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= team.length) return;
+    team[slotIndex] = {
+        pokemon: null,
+        types: [],
+        sprite: "",
+        game: ""
+    };
+    if (plannerState.selectionTarget?.type === "team" && plannerState.selectionTarget.slotIndex === slotIndex) {
+        plannerState.selectionTarget = null;
+    }
+    const targetLabel = el("plannerActiveTarget");
+    if (targetLabel) {
+        targetLabel.textContent = plannerState.selectionTarget ? getCurrentPlannerSelectionLabel() : "Click a slot to start";
+    }
+    input.value = "";
+    suggestionBox.classList.add("hidden");
+    suggestionBox.innerHTML = "";
+    selectedSuggestionIndex = -1;
+    scheduleSuggestionUpdate("");
+    renderTeam();
+    schedulePlannerRefresh();
+}
+
+function renderTeamPlannerPage() {
+    if (!pageContent) return;
+
+    pageContent.innerHTML = `
+        <section class="team-planner-page">
+            <section class="team-planner-section">
+                <div class="section-header planner-section-header">
+                    <div>
+                        <h3>Team Builder</h3>
+                        <p>Click a slot, then use the search bar above to pick a Pokémon.</p>
+                    </div>
+                    <div id="plannerActiveTarget" class="planner-active-target">${plannerState.selectionTarget ? getCurrentPlannerSelectionLabel() : "Click a slot to start"}</div>
+                </div>
+                <div id="teamGrid" class="team-grid"></div>
+            </section>
+
+            <section class="team-planner-section">
+                <div class="section-header planner-section-header">
+                    <div>
+                        <h3>Coverage Analysis</h3>
+                        <p>Type coverage from the current team.</p>
+                    </div>
+                </div>
+                <div id="coverageGrid" class="coverage-grid"></div>
+            </section>
+
+            <section class="team-planner-section">
+                <div class="section-header planner-section-header">
+                    <div>
+                        <h3>Team Summary</h3>
+                        <p>Quick overview of shared weaknesses, resistances, and immunities.</p>
+                    </div>
+                </div>
+                <div id="teamSummary" class="summary-grid"></div>
+            </section>
+        </section>
+    `;
+
+    renderTeam();
+    schedulePlannerRefresh();
+    scheduleSuggestionUpdate(input.value);
 }
 
 function setActiveType(type) {
@@ -1223,6 +1774,11 @@ async function searchPokemon() {
     suggestionBox.innerHTML = "";
 
     try {
+        const available = await getPokemonAvailability(name, currentGame);
+        if (!available) {
+            resultEl.innerHTML = `<div class="error">${capitalize(name)} is not available in the selected game.</div>`;
+            return;
+        }
         const pokemon = await fetchPokemon(name);
         if (requestToken !== searchRequestToken) return;
 
@@ -1361,7 +1917,9 @@ async function searchPokemon() {
     }
 }
 
-searchButton.addEventListener("click", searchPokemon);
+searchButton.addEventListener("click", async () => {
+    await submitSearchAction();
+});
 input.addEventListener("input", event => {
     scheduleSuggestionUpdate(event.target.value);
 });
@@ -1390,18 +1948,18 @@ input.addEventListener("keydown", event => {
             updateSuggestionSelection(selectedSuggestionIndex - 1);
         }
     } else if (event.key === "Enter") {
+        event.preventDefault();
         if (selectedSuggestionIndex >= 0) {
-            event.preventDefault();
             const selected = items[selectedSuggestionIndex];
             if (selected) {
                 input.value = selected.textContent;
                 suggestionBox.classList.add("hidden");
                 suggestionBox.innerHTML = "";
-                searchPokemon();
+                selectedSuggestionIndex = -1;
+                submitSearchAction();
             }
         } else {
-            event.preventDefault();
-            searchPokemon();
+            submitSearchAction();
         }
     } else if (event.key === "Escape") {
         suggestionBox.classList.add("hidden");
@@ -1427,12 +1985,55 @@ document.addEventListener("click", event => {
 suggestionBox.addEventListener("click", event => {
     const button = event.target.closest(".suggestion-item");
     if (!button) return;
+    const selectedName = normalize(button.textContent);
     input.value = button.textContent;
     suggestionBox.classList.add("hidden");
     suggestionBox.innerHTML = "";
     selectedSuggestionIndex = -1;
+
+    if (isTeamPlannerPage() && plannerState.selectionTarget) {
+        const target = plannerState.selectionTarget;
+        plannerState.selectionTarget = null;
+        const targetLabel = el("plannerActiveTarget");
+        if (targetLabel) {
+            targetLabel.textContent = "Click a slot to start";
+        }
+        if (target.type === "team") {
+            addPokemon(selectedName, target.slotIndex);
+        }
+        renderTeam();
+        return;
+    }
+
     searchPokemon();
 });
+
+async function submitSearchAction() {
+    const value = normalize(input.value);
+    if (!value) {
+        input.focus();
+        return;
+    }
+
+    if (isTeamPlannerPage() && plannerState.selectionTarget) {
+        const target = plannerState.selectionTarget;
+        plannerState.selectionTarget = null;
+        const targetLabel = el("plannerActiveTarget");
+        if (targetLabel) {
+            targetLabel.textContent = "Click a slot to start";
+        }
+        try {
+            if (target.type === "team") {
+                await addPokemon(value, target.slotIndex);
+            }
+        } catch {
+            return;
+        }
+        return;
+    }
+
+    searchPokemon();
+}
 
 // --- SPA renderer & router -------------------------------------------------
 function renderHomePage(){
@@ -2168,6 +2769,7 @@ function renderAdventureGuidePage() {
 }
 
 function setActivePage(page){
+    currentPage = page;
     const navButtons = Array.from(document.querySelectorAll('.main-nav .nav-item'));
     navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.page === page));
     switch(page){
@@ -2177,6 +2779,7 @@ function setActivePage(page){
         case 'adventure': renderAdventureGuidePage(); break;
         case 'matchups': renderTypeMatchupsPage(); break;
         case 'reference': renderTypeReferencePage(); break;
+        case 'team-planner': renderTeamPlannerPage(); break;
         case 'guides': renderGuidePage(); break;
         default: renderHomePage();
     }
@@ -2193,7 +2796,15 @@ document.addEventListener('click', (e) => {
 // initialize app
 loadTheme();
 loadAdventureProgress();
+applyGameSelection(currentGame, { rebuildPage: false });
+if (gameSelect) {
+    gameSelect.addEventListener("change", event => {
+        applyGameSelection(event.target.value);
+        scheduleSuggestionUpdate(input.value);
+        setActivePage(getDefaultPageForGame(currentGame));
+    });
+}
 loadPokemonList().catch(() => {
     // Keep core app pages usable even if remote API is unavailable.
 });
-setActivePage('reference');
+setActivePage(getDefaultPageForGame(currentGame));
