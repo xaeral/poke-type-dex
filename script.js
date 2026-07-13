@@ -1724,6 +1724,8 @@ function syncCoverageTypeHighlights(typeName = hoveredCoverageType) {
             : getSuperEffectiveAgainst(member?.types || []);
         const canDefeatHoveredType = hasHoveredType && Boolean(member?.pokemon) && superEffectiveAgainst.includes(hoveredType);
 
+        card.classList.toggle("coverage-muted", hasHoveredType && Boolean(member?.pokemon) && !canDefeatHoveredType);
+
         typeBadges.forEach(badge => {
             badge.classList.remove("coverage-effective", "coverage-ineffective");
 

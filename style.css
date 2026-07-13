@@ -337,6 +337,11 @@ button#searchButton:hover{
     animation:teamPulse 1.8s ease-in-out infinite;
 }
 
+.team-slot.coverage-muted{
+    opacity:.78;
+    filter:saturate(.8) brightness(.95);
+}
+
 .team-slot.coverage-poor{
     border-color:rgba(239,68,68,.45);
     opacity:.88;
