@@ -1231,8 +1231,20 @@ function renderAvailablePokemonFilterChips() {
             ? availablePokemonState.types.length === 0
             : availablePokemonState.types.includes(chip.key);
         const style = chip.color ? `style="--chip-color:${chip.color};"` : "";
-        return `<button type="button" class="available-filter-chip ${active ? "active" : ""}" data-type-filter="${chip.key}" ${style}>${chip.label}</button>`;
+        return `<button type="button" class="available-filter-chip ${active ? "active" : ""}" data-type-filter="${chip.key}" aria-pressed="${active ? "true" : "false"}" ${style}>${chip.label}</button>`;
     }).join("");
+}
+
+function syncAvailablePokemonFilterChipState() {
+    const chips = document.querySelectorAll(".available-filter-chip");
+    chips.forEach(chip => {
+        const typeFilter = chip.dataset.typeFilter || "all";
+        const active = typeFilter === "all"
+            ? availablePokemonState.types.length === 0
+            : availablePokemonState.types.includes(typeFilter);
+        chip.classList.toggle("active", active);
+        chip.setAttribute("aria-pressed", active ? "true" : "false");
+    });
 }
 
 function renderAvailablePokemonCard(entry) {
@@ -1280,6 +1292,8 @@ async function updateAvailablePokemonBrowser() {
     const searchQuery = normalize(availablePokemonState.search);
     const selectedTypes = availablePokemonState.types;
     const progressState = getAvailablePokemonProgressState(currentGame);
+
+    syncAvailablePokemonFilterChipState();
 
     const renderCatalog = (catalog) => {
         if (token !== availablePokemonLoadToken || !grid.isConnected) return;
