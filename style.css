@@ -541,6 +541,19 @@ button#searchButton:hover{
     color:var(--muted);
 }
 
+.team-slot-type.coverage-effective{
+    box-shadow:0 0 0 2px rgba(255,255,255,.22), 0 6px 14px rgba(0,0,0,.14);
+    transform:translateY(-1px);
+}
+
+.team-slot-type.coverage-ineffective{
+    background:rgba(148,163,184,.28) !important;
+    color:rgba(255,255,255,.72);
+    opacity:.52;
+    filter:grayscale(1) saturate(.2);
+    box-shadow:none;
+}
+
 .team-slot-game{
     color:var(--muted);
     font-size:.84rem;

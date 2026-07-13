@@ -883,6 +883,10 @@ function getSuperEffectiveAgainst(types) {
     return allTypes.filter(type => targets.has(type));
 }
 
+function isTypeSuperEffectiveAgainst(attackingType, defendingType) {
+    return (typeStrongMap[String(attackingType || "").toLowerCase()] || []).includes(String(defendingType || "").toLowerCase());
+}
+
 function getGameVersions(gameKey) {
     return plannerGameVersions[gameKey] || [];
 }
@@ -1705,6 +1709,30 @@ function clearCoverageHover() {
         card.classList.remove("coverage-best", "coverage-poor", "coverage-very-poor");
         card.removeAttribute("data-tooltip");
     });
+    syncCoverageTypeHighlights();
+}
+
+function syncCoverageTypeHighlights(typeName = hoveredCoverageType) {
+    const hoveredType = String(typeName || "").toLowerCase();
+    const hasHoveredType = Boolean(hoveredType);
+
+    document.querySelectorAll(".team-slot").forEach((card, index) => {
+        const member = team[index];
+        const typeBadges = card.querySelectorAll(".team-slot-type[data-team-type]");
+        const superEffectiveAgainst = Array.isArray(member?.superEffectiveAgainst)
+            ? member.superEffectiveAgainst
+            : getSuperEffectiveAgainst(member?.types || []);
+        const canDefeatHoveredType = hasHoveredType && Boolean(member?.pokemon) && superEffectiveAgainst.includes(hoveredType);
+
+        typeBadges.forEach(badge => {
+            badge.classList.remove("coverage-effective", "coverage-ineffective");
+
+            if (!canDefeatHoveredType) return;
+
+            const badgeType = badge.dataset.teamType;
+            badge.classList.add(isTypeSuperEffectiveAgainst(badgeType, hoveredType) ? "coverage-effective" : "coverage-ineffective");
+        });
+    });
 }
 
 async function applyCoverageHover(typeName) {
@@ -1735,6 +1763,8 @@ async function applyCoverageHover(typeName) {
             card.classList.add("coverage-best");
         }
     });
+
+    syncCoverageTypeHighlights(typeName);
 }
 
 async function getPlannerPokemon(name) {
@@ -1751,7 +1781,7 @@ function renderTeam() {
         const { primary, secondary } = getSlotColors(types);
         const slotClass = ["team-slot", member.pokemon ? "filled" : "empty"].join(" ");
         const typeBadges = types.length
-            ? types.map(type => `<span class="team-slot-type" style="background:${getTypeColor(type)}">${type}</span>`).join("")
+            ? types.map(type => `<span class="team-slot-type" data-team-type="${type}" style="background:${getTypeColor(type)}">${type}</span>`).join("")
             : `<span class="team-slot-type muted">No types</span>`;
         const label = member.pokemon ? `Remove ${capitalize(member.pokemon)} from team` : `Empty slot ${index + 1}`;
 
@@ -1797,6 +1827,8 @@ function renderTeam() {
             removePokemon(index);
         });
     });
+
+    syncCoverageTypeHighlights();
 
 }
 
