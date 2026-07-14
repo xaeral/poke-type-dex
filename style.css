@@ -1878,6 +1878,29 @@ button#searchButton:hover{
     width:100%;
 }
 
+.adventure-completed-toggle{
+    margin-top:12px;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.05);
+    color:var(--text);
+    font-size:.9rem;
+    user-select:none;
+}
+
+.adventure-completed-toggle input{
+    margin:0;
+    accent-color:var(--accent);
+}
+
+.adventure-completed-toggle-label{
+    font-weight:700;
+}
+
 .adventure-layout{
     display:grid;
     grid-template-columns:33% 67%;
@@ -1905,6 +1928,15 @@ button#searchButton:hover{
     max-height:600px;
     overflow:auto;
     padding:2px;
+}
+
+.adventure-list-empty{
+    padding:16px;
+    border-radius:14px;
+    border:1px dashed rgba(255,255,255,.2);
+    background:rgba(255,255,255,.03);
+    color:var(--muted);
+    line-height:1.5;
 }
 
 .adventure-objective-card{
@@ -2040,6 +2072,14 @@ button#searchButton:hover{
     user-select:none;
 }
 
+.adventure-map-column.no-marker-focus .adventure-map-inner{
+    filter:grayscale(.9) brightness(.46);
+}
+
+.adventure-map-column.no-marker-focus .adventure-map-zoom-controls{
+    opacity:.45;
+}
+
 .adventure-map-zoom-controls{
     position:absolute;
     top:10px;
@@ -2098,6 +2138,14 @@ button#searchButton:hover{
     overflow:visible;
     pointer-events:none;
     z-index:8;
+}
+
+.adventure-map-overlay[data-mode="modal"]{
+    pointer-events:auto;
+    display:grid;
+    place-items:center;
+    background:rgba(8,12,20,.68);
+    padding:10px;
 }
 
 .adventure-map-inner{
@@ -2200,6 +2248,41 @@ button#searchButton:hover{
     display:none;
 }
 
+.adventure-map-modal{
+    width:min(980px, 96vw);
+    max-height:92%;
+    overflow:auto;
+    background:linear-gradient(165deg, rgba(22,30,44,.96), rgba(11,16,28,.96));
+    border:1px solid rgba(255,255,255,.16);
+    border-left:4px solid var(--objective-accent, var(--accent));
+    border-radius:16px;
+    box-shadow:0 30px 70px rgba(0,0,0,.52);
+    padding:16px;
+    animation:adventureModalIn .24s ease;
+}
+
+.adventure-map-modal-title{
+    margin:0;
+    font-size:1.06rem;
+}
+
+.adventure-map-modal-description{
+    margin:10px 0 0;
+    color:var(--muted);
+    line-height:1.55;
+}
+
+.adventure-map-modal-meta{
+    display:grid;
+    gap:8px;
+    margin-top:12px;
+}
+
+@keyframes adventureModalIn{
+    from{ opacity:0; transform:translateY(8px) scale(.985); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
+}
+
 .adventure-marker-popout.below{
     transform:translate(-50%, 22px);
 }
@@ -2275,6 +2358,134 @@ button#searchButton:hover{
     margin:0 0 6px;
     font-size:0.8rem;
     line-height:1.1;
+}
+
+.adventure-team-list{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:6px;
+}
+
+@media (max-width:900px){
+    .adventure-team-list{
+        grid-template-columns:1fr;
+    }
+}
+
+.adventure-team-item{
+    position:relative;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    padding:7px 8px;
+    border-radius:9px;
+    border:1px solid rgba(255,255,255,.1);
+    background:rgba(255,255,255,.03);
+    font-size:.84rem;
+}
+
+.adventure-team-item-name{
+    font-weight:700;
+}
+
+.adventure-team-item-level{
+    color:var(--muted);
+}
+
+.adventure-team-empty{
+    color:var(--muted);
+    font-size:.84rem;
+}
+
+.adventure-team-item:hover::after{
+    content:attr(data-weaknesses);
+    position:absolute;
+    left:50%;
+    bottom:calc(100% + 8px);
+    transform:translateX(-50%);
+    min-width:220px;
+    max-width:min(420px, 84vw);
+    padding:8px 10px;
+    border-radius:10px;
+    background:rgba(10,15,24,.96);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 10px 24px rgba(0,0,0,.24);
+    font-size:.78rem;
+    line-height:1.4;
+    z-index:30;
+    pointer-events:none;
+    white-space:normal;
+}
+
+.adventure-tournament-panel{
+    margin-top:10px;
+    padding:10px;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,.1);
+    background:rgba(255,255,255,.02);
+}
+
+.adventure-tournament-panel h4{
+    margin:0 0 8px;
+    font-size:.82rem;
+    line-height:1.2;
+}
+
+.adventure-trainer-options{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+}
+
+.adventure-trainer-option{
+    border:1px solid rgba(255,255,255,.15);
+    background:rgba(255,255,255,.06);
+    color:var(--text);
+    padding:6px 9px;
+    border-radius:999px;
+    font-size:.78rem;
+    cursor:pointer;
+}
+
+.adventure-trainer-option.active{
+    background:var(--accent-soft);
+    border-color:var(--accent);
+}
+
+.adventure-trainer-detail{
+    margin-top:10px;
+}
+
+.adventure-trainer-detail-card{
+    padding:10px;
+    border-radius:12px;
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.1);
+}
+
+.adventure-trainer-detail-card h5{
+    margin:0;
+    font-size:.95rem;
+}
+
+.adventure-trainer-detail-subtitle{
+    margin:4px 0 0;
+    color:var(--muted);
+    font-size:.78rem;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+}
+
+.adventure-trainer-detail-description{
+    margin:8px 0 0;
+    color:var(--muted);
+    font-size:.84rem;
+    line-height:1.45;
 }
 
 .adventure-marker:hover .adventure-marker-dot{
