@@ -236,6 +236,23 @@ button#searchButton:hover{
     margin-top:24px;
 }
 
+.map-static-card{
+    margin-top:16px;
+    border-radius:18px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+}
+
+.map-static-image{
+    display:block;
+    width:100%;
+    height:auto;
+    object-fit:contain;
+    background:#0e1118;
+}
+
 .map-page-count{
     display:inline-flex;
     align-items:center;

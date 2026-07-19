@@ -1850,7 +1850,7 @@ function syncAdventureVisibility(gameKey = currentGame) {
 
     const mapButton = document.querySelector('.main-nav .nav-item[data-page="map"]');
     if (mapButton) {
-        mapButton.classList.toggle("hidden", !isScarletVioletGame(gameKey));
+        mapButton.classList.toggle("hidden", isScarletVioletGame(gameKey));
     }
 }
 
@@ -1863,7 +1863,7 @@ function applyGameSelection(gameKey, options = {}) {
     syncAdventureVisibility(nextGame);
     if (options.rebuildPage !== false) {
         const desiredPage = getDefaultPageForGame(nextGame);
-        if (currentPage === "adventure") {
+        if (currentPage === "adventure" || (currentPage === "map" && isScarletVioletGame(nextGame))) {
             setActivePage(desiredPage);
         }
     }
@@ -3570,6 +3570,38 @@ function renderGuidePage(){
     `;
 }
 
+function renderMapPage() {
+    if (!pageContent) return;
+
+    if (isSwordShieldGame()) {
+        pageContent.innerHTML = `
+            <section class="map-page">
+                <div class="section-header planner-section-header">
+                    <div>
+                        <h2>Galar Map</h2>
+                        <p>Reference map for Pokemon Sword / Shield locations.</p>
+                    </div>
+                </div>
+                <article class="map-static-card">
+                    <img
+                        class="map-static-image"
+                        src="./Images/maps/Pokemon_sword_shield_galar_map_locations.avif"
+                        alt="Pokemon Sword and Shield Galar map locations"
+                        loading="lazy"
+                        decoding="async">
+                </article>
+            </section>
+        `;
+        return;
+    }
+
+    pageContent.innerHTML = `
+        <section class="map-page">
+            <div class="loading">Map is currently available for Sword / Shield only.</div>
+        </section>
+    `;
+}
+
 function getAdventureCategoryMeta(category) {
     return objectiveCategoryMeta[category] || objectiveCategoryMeta.Gym;
 }
@@ -3958,6 +3990,7 @@ function renderAdventureMapPopout(objective, mapState) {
             overlay.dataset.objectiveId = String(objective.id);
             overlay.innerHTML = `
                 <article class="adventure-map-modal" style="--objective-accent:${meta.color}">
+                    <button class="adventure-popout-close" type="button" aria-label="Close adventure details">×</button>
                     <h3 class="adventure-map-modal-title">${escapeHtml(objective.name)}</h3>
                     <div class="adventure-marker-popout-badges">
                         <span class="badge-tag">${escapeHtml(objective.category)}</span>
@@ -3982,6 +4015,7 @@ function renderAdventureMapPopout(objective, mapState) {
         overlay.dataset.objectiveId = String(objective.id);
         overlay.innerHTML = `
             <article class="adventure-marker-popout" style="--objective-accent:${meta.color}">
+                <button class="adventure-popout-close" type="button" aria-label="Close adventure details">×</button>
                 <h3 class="adventure-marker-popout-title">${escapeHtml(objective.name)}</h3>
                 <div class="adventure-marker-popout-badges">
                     <span class="badge-tag">${escapeHtml(objective.category)}</span>
@@ -4025,6 +4059,12 @@ function renderAdventureMapPopout(objective, mapState) {
         top >= -visibilityPad &&
         top <= viewportRect.height + visibilityPad;
     popout.classList.toggle("is-hidden", !markerVisible);
+
+    const closeButton = overlay.querySelector(".adventure-popout-close");
+    if (closeButton && !closeButton.dataset.bound) {
+        closeButton.dataset.bound = "1";
+        closeButton.addEventListener("click", () => updateAdventureSelection(null));
+    }
 }
 
 function renderAdventureTypeBadges(typeList) {
@@ -4543,6 +4583,7 @@ function renderAdventureGuidePage() {
 
     const objectiveList = el("adventureObjectiveList");
     const mapInner = el("adventureMapInner");
+    const overlay = el("adventureMapOverlay");
     const zoomInBtn = el("adventureZoomIn");
     const zoomOutBtn = el("adventureZoomOut");
     const viewport = el("adventureMapViewport");
@@ -4588,6 +4629,14 @@ function renderAdventureGuidePage() {
                 return;
             }
             updateAdventureSelection(Number(marker.dataset.objectiveId));
+        });
+    }
+
+    if (overlay) {
+        overlay.addEventListener("click", event => {
+            if (event.target.closest(".adventure-popout-close")) {
+                updateAdventureSelection(null);
+            }
         });
     }
 
@@ -4649,6 +4698,7 @@ function setActivePage(page){
     switch(page){
         case 'home': renderHomePage(); break;
         case 'pokemon': renderPokemonPage(); break;
+        case 'map': renderMapPage(); break;
         case 'tera': renderTeraCrystalPage(); break;
         case 'adventure': renderAdventureGuidePage(); break;
         case 'matchups': renderTypeMatchupsPage(); break;
