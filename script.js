@@ -333,6 +333,19 @@ const adventureMapBounds = {
 
 const adventureDisplayCategories = new Set(["Gym", "Titan", "Team Star", "Post-Game", "DLC"]);
 
+const adventureStarterOptionSets = {
+    "scarlet-violet": [
+        { key: "sprigatito", label: "Sprigatito", type: "grass" },
+        { key: "fuecoco", label: "Fuecoco", type: "fire" },
+        { key: "quaxly", label: "Quaxly", type: "water" }
+    ],
+    "sword-shield": [
+        { key: "grookey", label: "Grookey", type: "grass" },
+        { key: "scorbunny", label: "Scorbunny", type: "fire" },
+        { key: "sobble", label: "Sobble", type: "water" }
+    ]
+};
+
 const adventureMapGenieGeoBounds = {
     minLat: 0.4412095757464,
     maxLat: 0.91498839656768,
@@ -877,9 +890,9 @@ const adventureGuide = [
             { pokemon: "Pawmot", level: 65, weaknesses: ["Ground", "Psychic", "Fairy"] }
         ],
         starterOptions: [
-            { pokemon: "Meowscarada", level: 66, weaknesses: ["Fire", "Ice", "Poison", "Flying", "Bug", "Fighting", "Fairy"] },
-            { pokemon: "Skeledirge", level: 66, weaknesses: ["Water", "Ground", "Rock", "Ghost", "Dark"] },
-            { pokemon: "Quaquaval", level: 66, weaknesses: ["Electric", "Grass", "Flying", "Psychic", "Fairy"] }
+            { starterKey: "sprigatito", pokemon: "Fuecoco", level: 66, weaknesses: ["Water", "Ground", "Rock", "Ghost", "Dark"] },
+            { starterKey: "fuecoco", pokemon: "Quaquaval", level: 66, weaknesses: ["Electric", "Grass", "Flying", "Psychic", "Fairy"] },
+            { starterKey: "quaxly", pokemon: "Meowscarada", level: 66, weaknesses: ["Fire", "Ice", "Poison", "Flying", "Bug", "Fighting", "Fairy"] }
         ]
     },
     {
@@ -1386,6 +1399,229 @@ const adventureGuide = [
     }
 ];
 
+const swordShieldAdventureGuide = [
+    {
+        id: 1001,
+        name: "Hop - Postwick",
+        category: "Post-Game",
+        type: "Trainer",
+        level: "5",
+        location: "Postwick",
+        leader: "Hop",
+        description: "First rival battle after picking your starter.",
+        weaknesses: [],
+        starterOptions: [
+            { starterKey: "grookey", pokemon: "Scorbunny", level: 5, weaknesses: ["Water", "Ground", "Rock"] },
+            { starterKey: "scorbunny", pokemon: "Sobble", level: 5, weaknesses: ["Electric", "Grass"] },
+            { starterKey: "sobble", pokemon: "Grookey", level: 5, weaknesses: ["Fire", "Ice", "Poison", "Flying", "Bug"] }
+        ],
+        team: [
+            { pokemon: "Wooloo", level: 5, weaknesses: ["Fighting"] }
+        ]
+    },
+    {
+        id: 1002,
+        name: "Milo - Turffield Gym",
+        category: "Gym",
+        type: "Grass",
+        level: "19-20",
+        location: "Turffield Stadium",
+        leader: "Milo",
+        description: "First Gym battle in Galar.",
+        weaknesses: ["Fire", "Ice", "Poison", "Flying", "Bug"],
+        team: [
+            { pokemon: "Gossifleur", level: 19, weaknesses: ["Fire", "Ice", "Poison", "Flying", "Bug"] },
+            { pokemon: "Eldegoss", level: 20, weaknesses: ["Fire", "Ice", "Poison", "Flying", "Bug"] }
+        ]
+    },
+    {
+        id: 1003,
+        name: "Bede - Route 2",
+        category: "Post-Game",
+        type: "Trainer",
+        level: "18",
+        location: "Route 2",
+        leader: "Bede",
+        description: "Bede tests your team before Motostoke.",
+        weaknesses: ["Bug", "Ghost", "Dark", "Poison"],
+        team: [
+            { pokemon: "Gothita", level: 18, weaknesses: ["Bug", "Ghost", "Dark"] },
+            { pokemon: "Solosis", level: 18, weaknesses: ["Bug", "Ghost", "Dark"] },
+            { pokemon: "Hatenna", level: 18, weaknesses: ["Poison", "Ghost", "Steel"] }
+        ]
+    },
+    {
+        id: 1004,
+        name: "Nessa - Hulbury Gym",
+        category: "Gym",
+        type: "Water",
+        level: "22-24",
+        location: "Hulbury Stadium",
+        leader: "Nessa",
+        description: "Second Gym battle against the Water-type Leader.",
+        weaknesses: ["Electric", "Grass"],
+        team: [
+            { pokemon: "Goldeen", level: 22, weaknesses: ["Electric", "Grass"] },
+            { pokemon: "Arrokuda", level: 23, weaknesses: ["Electric", "Grass"] },
+            { pokemon: "Drednaw", level: 24, weaknesses: ["Electric", "Grass", "Fighting", "Ground"] }
+        ]
+    },
+    {
+        id: 1005,
+        name: "Kabu - Motostoke Gym",
+        category: "Gym",
+        type: "Fire",
+        level: "25-27",
+        location: "Motostoke Stadium",
+        leader: "Kabu",
+        description: "Third Gym battle against the Fire-type Leader.",
+        weaknesses: ["Water", "Ground", "Rock"],
+        team: [
+            { pokemon: "Ninetales", level: 25, weaknesses: ["Water", "Ground", "Rock"] },
+            { pokemon: "Arcanine", level: 25, weaknesses: ["Water", "Ground", "Rock"] },
+            { pokemon: "Centiskorch", level: 27, weaknesses: ["Water", "Rock", "Flying"] }
+        ]
+    },
+    {
+        id: 1006,
+        name: "Bea - Stow-on-Side Gym",
+        category: "Gym",
+        type: "Fighting",
+        level: "34-36",
+        location: "Stow-on-Side Stadium",
+        leader: "Bea",
+        description: "Sword exclusive fourth Gym battle.",
+        weaknesses: ["Flying", "Psychic", "Fairy"],
+        team: [
+            { pokemon: "Hitmontop", level: 34, weaknesses: ["Flying", "Psychic", "Fairy"] },
+            { pokemon: "Pangoro", level: 34, weaknesses: ["Flying", "Fairy"] },
+            { pokemon: "Sirfetch'd", level: 35, weaknesses: ["Flying", "Psychic", "Fairy"] },
+            { pokemon: "Machamp", level: 36, weaknesses: ["Flying", "Psychic", "Fairy"] }
+        ]
+    },
+    {
+        id: 1007,
+        name: "Allister - Stow-on-Side Gym",
+        category: "Gym",
+        type: "Ghost",
+        level: "34-36",
+        location: "Stow-on-Side Stadium",
+        leader: "Allister",
+        description: "Shield exclusive fourth Gym battle.",
+        weaknesses: ["Ghost", "Dark"],
+        team: [
+            { pokemon: "Yamask", level: 34, weaknesses: ["Ghost", "Dark"] },
+            { pokemon: "Mimikyu", level: 34, weaknesses: ["Ghost", "Dark", "Steel", "Poison"] },
+            { pokemon: "Cursola", level: 35, weaknesses: ["Ghost", "Dark", "Steel", "Rock"] },
+            { pokemon: "Gengar", level: 36, weaknesses: ["Ghost", "Dark", "Psychic"] }
+        ]
+    },
+    {
+        id: 1008,
+        name: "Opal - Ballonlea Gym",
+        category: "Gym",
+        type: "Fairy",
+        level: "36-38",
+        location: "Ballonlea Stadium",
+        leader: "Opal",
+        description: "Fifth Gym battle against the Fairy-type Leader.",
+        weaknesses: ["Poison", "Steel"],
+        team: [
+            { pokemon: "Weezing", level: 36, weaknesses: ["Ground", "Psychic", "Steel"] },
+            { pokemon: "Mawile", level: 36, weaknesses: ["Fire", "Ground"] },
+            { pokemon: "Togekiss", level: 37, weaknesses: ["Electric", "Ice", "Poison", "Rock", "Steel"] },
+            { pokemon: "Alcremie", level: 38, weaknesses: ["Poison", "Steel"] }
+        ]
+    },
+    {
+        id: 1009,
+        name: "Gordie - Circhester Gym",
+        category: "Gym",
+        type: "Rock",
+        level: "40-42",
+        location: "Circhester Stadium",
+        leader: "Gordie",
+        description: "Sword exclusive sixth Gym battle.",
+        weaknesses: ["Water", "Grass", "Fighting", "Ground", "Steel"],
+        team: [
+            { pokemon: "Barbaracle", level: 40, weaknesses: ["Water", "Grass", "Electric", "Fighting", "Rock"] },
+            { pokemon: "Shuckle", level: 40, weaknesses: ["Water", "Rock", "Steel", "Fire", "Fighting"] },
+            { pokemon: "Stonjourner", level: 41, weaknesses: ["Water", "Grass", "Fighting", "Ground", "Steel"] },
+            { pokemon: "Coalossal", level: 42, weaknesses: ["Water", "Fighting", "Ground", "Grass", "Electric"] }
+        ]
+    },
+    {
+        id: 1010,
+        name: "Melony - Circhester Gym",
+        category: "Gym",
+        type: "Ice",
+        level: "40-42",
+        location: "Circhester Stadium",
+        leader: "Melony",
+        description: "Shield exclusive sixth Gym battle.",
+        weaknesses: ["Fire", "Rock", "Steel", "Fighting"],
+        team: [
+            { pokemon: "Frosmoth", level: 40, weaknesses: ["Fire", "Rock", "Steel", "Flying"] },
+            { pokemon: "Darmanitan", level: 40, weaknesses: ["Water", "Grass", "Rock", "Ground", "Fighting", "Steel"] },
+            { pokemon: "Eiscue", level: 41, weaknesses: ["Fire", "Fighting", "Rock", "Steel"] },
+            { pokemon: "Lapras", level: 42, weaknesses: ["Electric", "Grass", "Fighting", "Rock"] }
+        ]
+    },
+    {
+        id: 1011,
+        name: "Piers - Spikemuth Gym",
+        category: "Gym",
+        type: "Dark",
+        level: "44-46",
+        location: "Spikemuth",
+        leader: "Piers",
+        description: "Seventh Gym battle with no Dynamax.",
+        weaknesses: ["Fighting", "Bug", "Fairy"],
+        team: [
+            { pokemon: "Scrafty", level: 44, weaknesses: ["Fighting", "Flying", "Fairy"] },
+            { pokemon: "Malamar", level: 45, weaknesses: ["Bug", "Fairy"] },
+            { pokemon: "Skuntank", level: 45, weaknesses: ["Ground"] },
+            { pokemon: "Obstagoon", level: 46, weaknesses: ["Fighting", "Bug", "Fairy"] }
+        ]
+    },
+    {
+        id: 1012,
+        name: "Raihan - Hammerlocke Gym",
+        category: "Gym",
+        type: "Dragon",
+        level: "46-48",
+        location: "Hammerlocke Stadium",
+        leader: "Raihan",
+        description: "Final Gym battle before the Champion Cup finals.",
+        weaknesses: ["Ice", "Dragon", "Fairy"],
+        team: [
+            { pokemon: "Flygon", level: 46, weaknesses: ["Ice", "Dragon", "Fairy"] },
+            { pokemon: "Gigalith", level: 46, weaknesses: ["Water", "Grass", "Fighting", "Ground", "Steel"] },
+            { pokemon: "Sandaconda", level: 47, weaknesses: ["Water", "Grass", "Ice"] },
+            { pokemon: "Duraludon", level: 48, weaknesses: ["Fighting", "Ground"] }
+        ]
+    },
+    {
+        id: 1013,
+        name: "Champion Leon",
+        category: "Post-Game",
+        type: "Champion",
+        level: "62-65",
+        location: "Wyndon Stadium",
+        leader: "Leon",
+        description: "The final battle for the Champion title.",
+        weaknesses: ["Ice", "Rock", "Dragon", "Fairy", "Fighting"],
+        team: [
+            { pokemon: "Aegislash", level: 62, weaknesses: ["Fire", "Ground", "Ghost", "Dark"] },
+            { pokemon: "Haxorus", level: 63, weaknesses: ["Ice", "Dragon", "Fairy"] },
+            { pokemon: "Rhyperior", level: 63, weaknesses: ["Water", "Grass", "Fighting", "Ground", "Steel", "Ice"] },
+            { pokemon: "Dragapult", level: 64, weaknesses: ["Ice", "Dragon", "Ghost", "Dark", "Fairy"] },
+            { pokemon: "Mr. Rime", level: 64, weaknesses: ["Fire", "Rock", "Bug", "Ghost", "Steel", "Dark"] },
+            { pokemon: "Charizard", level: 65, weaknesses: ["Water", "Electric", "Rock"] }
+        ]
+    }
+];
+
 let selectedAdventureObjectiveId = adventureGuide[0]?.id || null;
 let adventureResizeHandler = null;
 let adventureMapPositionState = null;
@@ -1393,6 +1629,7 @@ let adventureDragState = null;
 let adventureSuppressMarkerClick = false;
 const adventureProgressStorageKey = "adventureGuideProgressV1";
 const adventureHideCompletedStorageKey = "adventureGuideHideCompletedV1";
+const adventureStarterChoiceStorageKey = "adventureGuideStarterChoiceV1";
 let adventureMapAspectRatio = 1;
 const adventureMapBaseZoom = 1.28;
 const adventureMapZoomMin = 0.4;
@@ -1401,6 +1638,7 @@ const adventureMapZoomStep = 0.2;
 let adventureMapZoomLevel = 1;
 let adventureCompletedObjectiveIds = new Set();
 let adventureHideCompleted = false;
+let adventureStarterChoices = {};
 
 function loadAdventureProgress() {
     try {
@@ -1441,6 +1679,26 @@ function loadAdventurePreferences() {
 function saveAdventurePreferences() {
     try {
         localStorage.setItem(adventureHideCompletedStorageKey, adventureHideCompleted ? "1" : "0");
+    } catch {
+        // Ignore storage write failures.
+    }
+}
+
+function loadAdventureStarterChoices() {
+    try {
+        const stored = localStorage.getItem(adventureStarterChoiceStorageKey);
+        adventureStarterChoices = stored ? JSON.parse(stored) : {};
+        if (!adventureStarterChoices || typeof adventureStarterChoices !== "object") {
+            adventureStarterChoices = {};
+        }
+    } catch {
+        adventureStarterChoices = {};
+    }
+}
+
+function saveAdventureStarterChoices() {
+    try {
+        localStorage.setItem(adventureStarterChoiceStorageKey, JSON.stringify(adventureStarterChoices));
     } catch {
         // Ignore storage write failures.
     }
@@ -1557,8 +1815,16 @@ function isScarletVioletGame(gameKey = currentGame) {
     return gameKey === "scarlet-violet";
 }
 
+function isSwordShieldGame(gameKey = currentGame) {
+    return gameKey === "sword-shield";
+}
+
+function isAdventureGuideGame(gameKey = currentGame) {
+    return isScarletVioletGame(gameKey) || isSwordShieldGame(gameKey);
+}
+
 function getDefaultPageForGame(gameKey = currentGame) {
-    return isScarletVioletGame(gameKey) ? "adventure" : "reference";
+    return isAdventureGuideGame(gameKey) ? "adventure" : "reference";
 }
 
 function saveSelectedGame(gameKey) {
@@ -1574,12 +1840,17 @@ function setGameSelectValue(gameKey) {
 function syncAdventureVisibility(gameKey = currentGame) {
     const adventureButton = document.querySelector('.main-nav .nav-item[data-page="adventure"]');
     if (adventureButton) {
-        adventureButton.classList.toggle("hidden", !isScarletVioletGame(gameKey));
+        adventureButton.classList.toggle("hidden", !isAdventureGuideGame(gameKey));
     }
 
     const teraButton = document.querySelector('.main-nav .nav-item[data-page="tera"]');
     if (teraButton) {
         teraButton.classList.toggle("hidden", !isScarletVioletGame(gameKey));
+    }
+
+    const mapButton = document.querySelector('.main-nav .nav-item[data-page="map"]');
+    if (mapButton) {
+        mapButton.classList.toggle("hidden", !isScarletVioletGame(gameKey));
     }
 }
 
@@ -1592,7 +1863,7 @@ function applyGameSelection(gameKey, options = {}) {
     syncAdventureVisibility(nextGame);
     if (options.rebuildPage !== false) {
         const desiredPage = getDefaultPageForGame(nextGame);
-        if (!isScarletVioletGame(nextGame) && currentPage === "adventure") {
+        if (currentPage === "adventure") {
             setActivePage(desiredPage);
         }
     }
@@ -3304,6 +3575,10 @@ function getAdventureCategoryMeta(category) {
 }
 
 function getAdventureObjectives() {
+    if (isSwordShieldGame()) {
+        return swordShieldAdventureGuide;
+    }
+
     return adventureGuide.filter(objective => adventureDisplayCategories.has(objective.category));
 }
 
@@ -3471,7 +3746,6 @@ function renderAdventureList() {
                 class="adventure-objective-card ${isSelected ? "selected" : ""} ${isCompleted ? "completed" : ""}"
                 data-objective-id="${objective.id}"
                 style="--objective-accent:${meta.color}">
-                <div class="adventure-objective-order">${objective.id}</div>
                 <div class="adventure-objective-content">
                     <div class="adventure-objective-name">${escapeHtml(objective.name)}</div>
                     <div class="adventure-objective-subline">
@@ -3640,6 +3914,8 @@ function renderAdventureMapPopout(objective, mapState) {
     const isEliteFourPlus = isEliteFourAndBeyondObjective(objective);
     const isChampion = isChampionObjective(objective);
     const hasAcademyTournament = hasAcademyTournamentData(objective);
+    const starterMatchup = getAdventureStarterMatchup(objective);
+    const weakAgainstTypes = starterMatchup?.weaknesses?.length ? starterMatchup.weaknesses : objective.weaknesses;
     const teamSection = isEliteFourPlus && !hasAcademyTournament
         ? `
             <div class="adventure-marker-popout-weaknesses">
@@ -3655,7 +3931,7 @@ function renderAdventureMapPopout(objective, mapState) {
         ? `
             <div class="adventure-marker-popout-weaknesses">
                 <h4>Starter Options (hover for weaknesses)</h4>
-                ${renderAdventureStarterOptions(objective.starterOptions)}
+                ${renderAdventureStarterOptions(objective.starterOptions, getAdventureStarterChoice())}
             </div>
         `
         : "";
@@ -3672,7 +3948,7 @@ function renderAdventureMapPopout(objective, mapState) {
         : `
             <div class="adventure-marker-popout-weaknesses">
                 <h4>Weak Against</h4>
-                <div class="adventure-type-badge-row">${renderAdventureTypeBadges(objective.weaknesses)}</div>
+                <div class="adventure-type-badge-row">${renderAdventureTypeBadges(weakAgainstTypes)}</div>
             </div>
         `;
 
@@ -3757,10 +4033,9 @@ function renderAdventureTypeBadges(typeList) {
     }
 
     return typeList.map(type => `
-        <span class="adventure-type-badge">
-            <img src="${getTypeIconUrl(type)}" alt="${escapeHtml(type)} icon">
-            <span>${escapeHtml(type)}</span>
-        </span>
+        ${typeIconMap[String(type || "").toLowerCase()]
+            ? `<span class="adventure-type-badge"><img src="${getTypeIconUrl(type)}" alt="${escapeHtml(type)} icon"><span>${escapeHtml(type)}</span></span>`
+            : `<span class="adventure-type-badge">${escapeHtml(type)}</span>`}
     `).join("");
 }
 
@@ -3793,29 +4068,47 @@ function renderAdventureTeamList(teamList) {
     `;
 }
 
-function renderAdventureStarterOptions(starterList) {
+function renderAdventureStarterOptions(starterList, selectedStarterKey = null) {
     if (!Array.isArray(starterList) || !starterList.length) {
         return "";
     }
 
+    const selectedStarter = selectedStarterKey
+        ? starterList.find(entry => entry?.starterKey === selectedStarterKey)
+        : null;
+    const displayList = selectedStarter ? [selectedStarter] : starterList;
+
     return `
         <ul class="adventure-team-list">
-            ${starterList.map(entry => {
+            ${displayList.map(entry => {
                 const name = escapeHtml(entry?.pokemon || "Unknown");
                 const level = entry?.level ? `Lv.${escapeHtml(String(entry.level))}` : "Lv.?";
                 const weaknesses = Array.isArray(entry?.weaknesses) && entry.weaknesses.length
                     ? entry.weaknesses.join(", ")
                     : "Weakness data not listed";
+                const label = entry?.starterKey
+                    ? `If you chose ${escapeHtml(capitalize(entry.starterKey))}`
+                    : "Starter matchup";
 
                 return `
-                    <li class="adventure-team-item" data-weaknesses="Weak to: ${escapeHtml(weaknesses)}">
+                    <li class="adventure-team-item ${selectedStarter ? "selected" : ""}" data-weaknesses="Weak to: ${escapeHtml(weaknesses)}">
                         <span class="adventure-team-item-name">${name}</span>
                         <span class="adventure-team-item-level">${level}</span>
+                        <span class="adventure-team-item-note">${label}</span>
                     </li>
                 `;
             }).join("")}
         </ul>
     `;
+}
+
+function getAdventureStarterMatchup(objective, gameKey = currentGame) {
+    if (!Array.isArray(objective?.starterOptions) || !objective.starterOptions.length) {
+        return null;
+    }
+
+    const selectedStarter = getAdventureStarterChoice(gameKey);
+    return objective.starterOptions.find(entry => entry?.starterKey === selectedStarter) || objective.starterOptions[0] || null;
 }
 
 function hasAcademyTournamentData(objective) {
@@ -3908,6 +4201,118 @@ function isChampionObjective(objective) {
     return name.startsWith("Champion ");
 }
 
+function getAdventureStarterOptionsForGame(gameKey = currentGame) {
+    return adventureStarterOptionSets[gameKey] || [];
+}
+
+function getAdventureStarterChoice(gameKey = currentGame) {
+    const options = getAdventureStarterOptionsForGame(gameKey);
+    if (!options.length) return null;
+
+    const storedChoice = adventureStarterChoices[gameKey];
+    if (storedChoice && options.some(option => option.key === storedChoice)) {
+        return storedChoice;
+    }
+
+    return options[0].key;
+}
+
+function setAdventureStarterChoice(gameKey, starterKey) {
+    const options = getAdventureStarterOptionsForGame(gameKey);
+    if (!options.some(option => option.key === starterKey)) return;
+
+    adventureStarterChoices = {
+        ...adventureStarterChoices,
+        [gameKey]: starterKey
+    };
+    saveAdventureStarterChoices();
+}
+
+function renderAdventureStarterSelector() {
+    const options = getAdventureStarterOptionsForGame();
+    if (!options.length) return "";
+
+    const selectedStarter = getAdventureStarterChoice();
+    return `
+        <div class="adventure-starter-choice" title="Choose the starter you picked">
+            <span>Your Starter</span>
+            <div class="adventure-starter-choice-buttons" role="group" aria-label="Choose your starter">
+                ${options.map(option => `
+                    <button
+                        type="button"
+                        class="adventure-starter-choice-button ${option.key === selectedStarter ? "selected" : ""} ${option.type}"
+                        data-starter-key="${option.key}"
+                        aria-pressed="${option.key === selectedStarter ? "true" : "false"}">
+                        <span class="adventure-starter-choice-circle" aria-hidden="true"></span>
+                        <span class="adventure-starter-choice-name">${escapeHtml(option.label)}</span>
+                    </button>
+                `).join("")}
+            </div>
+        </div>
+    `;
+}
+
+function bindAdventureStarterSelector() {
+    const buttons = Array.from(document.querySelectorAll(".adventure-starter-choice-button"));
+    if (!buttons.length) return;
+
+    buttons.forEach(button => {
+        button.addEventListener("click", () => {
+            setAdventureStarterChoice(currentGame, button.dataset.starterKey);
+            if (currentPage === "adventure") {
+                renderAdventureGuidePage();
+            }
+        });
+    });
+}
+
+function renderSwordShieldAdventureDetail(objective) {
+    const detailRoot = el("adventureStaticDetail");
+    if (!detailRoot) return;
+
+    if (!objective) {
+        detailRoot.innerHTML = '<div class="adventure-list-empty">Select a battle to view details.</div>';
+        return;
+    }
+
+    const meta = getAdventureCategoryMeta(objective.category);
+    const starterMatchup = getAdventureStarterMatchup(objective, "sword-shield");
+    const selectedStarter = getAdventureStarterChoice("sword-shield");
+    const weakAgainstTypes = starterMatchup?.weaknesses?.length ? starterMatchup.weaknesses : objective.weaknesses;
+    const starterSection = Array.isArray(objective.starterOptions) && objective.starterOptions.length
+        ? `
+            <div class="adventure-marker-popout-weaknesses">
+                <h4>Your Starter Matchup</h4>
+                ${renderAdventureStarterOptions(objective.starterOptions, selectedStarter)}
+            </div>
+        `
+        : "";
+    detailRoot.innerHTML = `
+        <article class="adventure-map-modal adventure-static-modal" style="--objective-accent:${meta.color}">
+            <h3 class="adventure-map-modal-title">${escapeHtml(objective.name)}</h3>
+            <div class="adventure-marker-popout-badges">
+                <span class="badge-tag">${escapeHtml(objective.category)}</span>
+                <span class="badge-tag">${escapeHtml(objective.type)}</span>
+                <span class="badge-tag">Lv.${escapeHtml(objective.level)}</span>
+            </div>
+            <p class="adventure-map-modal-description">${escapeHtml(objective.description)}</p>
+            <div class="adventure-map-modal-meta">
+                <div class="adventure-marker-popout-row"><span>Location</span><strong>${escapeHtml(objective.location || "Story location")}</strong></div>
+                <div class="adventure-marker-popout-row"><span>${escapeHtml(getAdventureRoleLabel(objective.category))}</span><strong>${escapeHtml(objective.leader || "Various")}</strong></div>
+            </div>
+            ${starterSection}
+            <div class="adventure-marker-popout-weaknesses">
+                <h4>Weak Against</h4>
+                <div class="adventure-type-badge-row">${renderAdventureTypeBadges(weakAgainstTypes)}</div>
+            </div>
+            <div class="adventure-marker-popout-weaknesses">
+                <h4>Battle Team</h4>
+                ${renderAdventureTeamList(objective.team || [])}
+            </div>
+        </article>
+    `;
+}
+
 function setupAdventureMapDragging() {
     const viewport = el("adventureMapViewport");
     const inner = el("adventureMapInner");
@@ -3986,7 +4391,14 @@ function updateAdventureSelection(id) {
         document.querySelectorAll(".adventure-marker").forEach(marker => marker.classList.remove("selected"));
         const mapColumn = document.querySelector(".adventure-map-column");
         if (mapColumn) mapColumn.classList.remove("no-marker-focus");
-        renderAdventureMapPopout(null, null);
+        if (isSwordShieldGame()) {
+            const detailRoot = el("adventureStaticDetail");
+            if (detailRoot) {
+                detailRoot.innerHTML = '<div class="adventure-list-empty">Select a battle to view details.</div>';
+            }
+        } else {
+            renderAdventureMapPopout(null, null);
+        }
         return;
     }
 
@@ -4003,11 +4415,15 @@ function updateAdventureSelection(id) {
         marker.classList.toggle("selected", markerId === selectedAdventureObjectiveId);
     });
 
-    centerAdventureObjective(objective);
+    if (isSwordShieldGame()) {
+        renderSwordShieldAdventureDetail(objective);
+    } else {
+        centerAdventureObjective(objective);
 
-    const mapColumn = document.querySelector(".adventure-map-column");
-    if (mapColumn) {
-        mapColumn.classList.toggle("no-marker-focus", !hasAdventureMapMarker(objective));
+        const mapColumn = document.querySelector(".adventure-map-column");
+        if (mapColumn) {
+            mapColumn.classList.toggle("no-marker-focus", !hasAdventureMapMarker(objective));
+        }
     }
 
     const selectedCard = document.querySelector(`.adventure-objective-card[data-objective-id="${objective.id}"]`);
@@ -4019,15 +4435,85 @@ function updateAdventureSelection(id) {
 function renderAdventureGuidePage() {
     if (!pageContent) return;
 
+    if (isSwordShieldGame()) {
+        const starterSelector = renderAdventureStarterSelector();
+        pageContent.innerHTML = `
+            <section class="adventure-page">
+                <header class="adventure-header">
+                    <h2>Adventure Guide</h2>
+                    <p>Battle-focused Sword / Shield guide. Select an encounter to view the opposing team and weaknesses.</p>
+                    <div class="adventure-header-controls">
+                        <label class="adventure-completed-toggle" title="Show or hide completed tasks">
+                            <input id="adventureHideCompleted" type="checkbox" ${adventureHideCompleted ? "checked" : ""}>
+                            <span class="adventure-completed-toggle-label">Hide Completed</span>
+                        </label>
+                        ${starterSelector}
+                    </div>
+                </header>
+
+                <div class="adventure-layout">
+                    <aside class="adventure-column adventure-list-column">
+                        <div id="adventureObjectiveList" class="adventure-objective-list"></div>
+                    </aside>
+
+                    <section class="adventure-column adventure-detail-column">
+                        <div id="adventureStaticDetail" class="adventure-static-detail"></div>
+                    </section>
+                </div>
+            </section>
+        `;
+
+        const firstObjectiveId = getAdventureVisibleObjectives()[0]?.id || null;
+        selectedAdventureObjectiveId = getAdventureObjectiveById(selectedAdventureObjectiveId)?.id || firstObjectiveId;
+        renderAdventureList();
+        renderSwordShieldAdventureDetail(getAdventureObjectiveById(selectedAdventureObjectiveId));
+
+        const objectiveList = el("adventureObjectiveList");
+        const hideCompletedToggle = el("adventureHideCompleted");
+
+        if (hideCompletedToggle) {
+            hideCompletedToggle.addEventListener("change", event => {
+                adventureHideCompleted = Boolean(event.target.checked);
+                saveAdventurePreferences();
+                ensureAdventureSelectionVisible();
+                renderAdventureList();
+                renderSwordShieldAdventureDetail(getAdventureObjectiveById(selectedAdventureObjectiveId));
+            });
+        }
+
+        if (objectiveList) {
+            objectiveList.addEventListener("change", event => {
+                const checkbox = event.target.closest(".adventure-progress-checkbox");
+                if (!checkbox) return;
+                setAdventureObjectiveCompleted(Number(checkbox.dataset.objectiveId), checkbox.checked);
+            });
+
+            objectiveList.addEventListener("click", event => {
+                if (event.target.closest(".adventure-progress-toggle")) return;
+                const card = event.target.closest(".adventure-objective-card");
+                if (!card) return;
+                updateAdventureSelection(Number(card.dataset.objectiveId));
+            });
+        }
+
+        bindAdventureStarterSelector();
+
+        return;
+    }
+
+    const starterSelector = renderAdventureStarterSelector();
     pageContent.innerHTML = `
         <section class="adventure-page">
             <header class="adventure-header">
                 <h2>Adventure Guide</h2>
                 <p>Follow the recommended order for completing Pokemon Scarlet / Violet (current guide). Select any objective to view its location, recommended level and battle information.</p>
-                <label class="adventure-completed-toggle" title="Show or hide completed tasks">
-                    <input id="adventureHideCompleted" type="checkbox" ${adventureHideCompleted ? "checked" : ""}>
-                    <span class="adventure-completed-toggle-label">Hide Completed</span>
-                </label>
+                <div class="adventure-header-controls">
+                    <label class="adventure-completed-toggle" title="Show or hide completed tasks">
+                        <input id="adventureHideCompleted" type="checkbox" ${adventureHideCompleted ? "checked" : ""}>
+                        <span class="adventure-completed-toggle-label">Hide Completed</span>
+                    </label>
+                    ${starterSelector}
+                </div>
             </header>
 
             <div class="adventure-layout">
@@ -4130,6 +4616,8 @@ function renderAdventureGuidePage() {
             updateAdventureZoomUi();
         }, { passive: false });
     }
+
+    bindAdventureStarterSelector();
 
     setupAdventureMapDragging();
 
