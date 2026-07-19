@@ -4721,6 +4721,7 @@ document.addEventListener('click', (e) => {
 loadTheme();
 loadAdventureProgress();
 loadAdventurePreferences();
+loadAdventureStarterChoices();
 loadTeamPlannerState();
 window.addEventListener("beforeunload", saveTeamPlannerState);
 document.addEventListener("visibilitychange", () => {
