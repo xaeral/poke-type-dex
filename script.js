@@ -1229,12 +1229,12 @@ const adventureGuide = [
                     description: "High-pressure balanced offense with a starter ace.",
                     weakAgainst: ["Water", "Ground", "Ice", "Fairy", "Fighting"],
                     team: [
-                        { pokemon: "Lycanroc", level: 65, weaknesses: ["Water", "Grass", "Fighting", "Ground", "Steel"] },
-                        { pokemon: "Goodra", level: 65, weaknesses: ["Ice", "Dragon", "Fairy"] },
-                        { pokemon: "Dudunsparce", level: 65, weaknesses: ["Fighting"] },
-                        { pokemon: "Orthworm", level: 65, weaknesses: ["Fire", "Fighting", "Ground"] },
-                        { pokemon: "Pawmot", level: 65, weaknesses: ["Ground", "Psychic", "Fairy"] },
-                        { pokemon: "Starter (depends on your pick)", level: 66, hideWeaknesses: true }
+                        { pokemon: "Lycanroc", level: 71, weaknesses: ["Water", "Grass", "Fighting", "Ground", "Steel"] },
+                        { pokemon: "Goodra", level: 71, weaknesses: ["Ice", "Dragon", "Fairy"] },
+                        { pokemon: "Dudunsparce", level: 71, weaknesses: ["Fighting"] },
+                        { pokemon: "Orthworm", level: 71, weaknesses: ["Fire", "Fighting", "Ground"] },
+                        { pokemon: "Pawmot", level: 71, weaknesses: ["Ground", "Psychic", "Fairy"] },
+                        { pokemon: "Starter (depends on your pick)", level: 72, hideWeaknesses: true }
                     ]
                 },
                 {
@@ -1243,12 +1243,12 @@ const adventureGuide = [
                     description: "Bulky mixed team anchored by Mabosstiff.",
                     weakAgainst: ["Fighting", "Fairy", "Grass", "Electric"],
                     team: [
-                        { pokemon: "Greedent", level: 65, weaknesses: ["Fighting"] },
-                        { pokemon: "Cloyster", level: 65, weaknesses: ["Electric", "Grass", "Fighting", "Rock"] },
-                        { pokemon: "Scovillain", level: 65, weaknesses: ["Flying (x4)", "Rock", "Poison"] },
-                        { pokemon: "Toedscruel", level: 65, weaknesses: ["Fire", "Ice", "Flying", "Bug"] },
-                        { pokemon: "Garganacl", level: 65, weaknesses: ["Water", "Grass", "Fighting", "Ground", "Steel"] },
-                        { pokemon: "Mabosstiff", level: 66, weaknesses: ["Fighting", "Bug", "Fairy"] }
+                        { pokemon: "Greedent", level: 67, weaknesses: ["Fighting"] },
+                        { pokemon: "Cloyster", level: 67, weaknesses: ["Electric", "Grass", "Fighting", "Rock"] },
+                        { pokemon: "Scovillain", level: 67, weaknesses: ["Flying (x4)", "Rock", "Poison"] },
+                        { pokemon: "Toedscruel", level: 67, weaknesses: ["Fire", "Ice", "Flying", "Bug"] },
+                        { pokemon: "Garganacl", level: 67, weaknesses: ["Water", "Grass", "Fighting", "Ground", "Steel"] },
+                        { pokemon: "Mabosstiff", level: 68, weaknesses: ["Fighting", "Bug", "Fairy"] }
                     ]
                 },
                 {
@@ -1257,12 +1257,12 @@ const adventureGuide = [
                     description: "Eeveelution specialist with broad special coverage.",
                     weakAgainst: ["Fighting", "Ground", "Poison", "Steel", "Rock"],
                     team: [
-                        { pokemon: "Umbreon", level: 65, weaknesses: ["Fighting", "Bug", "Fairy"] },
-                        { pokemon: "Vaporeon", level: 65, weaknesses: ["Electric", "Grass"] },
-                        { pokemon: "Jolteon", level: 65, weaknesses: ["Ground"] },
-                        { pokemon: "Flareon", level: 65, weaknesses: ["Water", "Ground", "Rock"] },
-                        { pokemon: "Leafeon", level: 65, weaknesses: ["Fire", "Ice", "Poison", "Flying", "Bug"] },
-                        { pokemon: "Sylveon", level: 66, weaknesses: ["Poison", "Steel"] }
+                        { pokemon: "Umbreon", level: 69, weaknesses: ["Fighting", "Bug", "Fairy"] },
+                        { pokemon: "Vaporeon", level: 69, weaknesses: ["Electric", "Grass"] },
+                        { pokemon: "Jolteon", level: 69, weaknesses: ["Ground"] },
+                        { pokemon: "Flareon", level: 69, weaknesses: ["Water", "Ground", "Rock"] },
+                        { pokemon: "Leafeon", level: 69, weaknesses: ["Fire", "Ice", "Poison", "Flying", "Bug"] },
+                        { pokemon: "Sylveon", level: 70, weaknesses: ["Poison", "Steel"] }
                     ]
                 },
                 {
@@ -1271,22 +1271,140 @@ const adventureGuide = [
                     description: "Balanced veteran team with a starter-dependent closer.",
                     weakAgainst: ["Fairy", "Ice", "Fighting", "Ground"],
                     team: [
-                        { pokemon: "Oranguru / Indeedee", level: 65, hideWeaknesses: true },
-                        { pokemon: "Abomasnow", level: 65, weaknesses: ["Fire (x4)", "Fighting", "Rock", "Poison", "Flying", "Bug", "Steel"] },
-                        { pokemon: "Polteageist", level: 65, weaknesses: ["Ghost", "Dark"] },
-                        { pokemon: "Haxorus", level: 65, weaknesses: ["Ice", "Dragon", "Fairy"] },
-                        { pokemon: "Starter (depends on your pick)", level: 66, hideWeaknesses: true }
+                        { pokemon: "Oranguru", level: 69, weaknesses: ["Bug", "Dark"] },
+                        { pokemon: "Abomasnow", level: 69, weaknesses: ["Fire (x4)", "Fighting", "Rock", "Poison", "Flying", "Bug", "Steel"] },
+                        { pokemon: "Polteageist", level: 69, weaknesses: ["Ghost", "Dark"] },
+                        { pokemon: "Amoonguss", level: 69, weaknesses: ["Fire", "Ice", "Flying", "Psychic"] },
+                        { pokemon: "Gyarados", level: 69, weaknesses: ["Electric (x4)", "Rock"] },
+                        { pokemon: "Starter (depends on your pick)", level: 70, hideWeaknesses: true }
                     ]
                 },
-                { name: "Geeta", title: "Top Champion", description: "Champion-caliber balanced team.", weakAgainst: ["Fighting", "Ground", "Fire", "Water", "Dark"], team: [] },
-                { name: "Jacq", title: "Biology Teacher", description: "Academic battle style with flexible coverage.", weakAgainst: ["Fire", "Fighting", "Dark"], team: [] },
-                { name: "Dendra", title: "Battle Studies Teacher", description: "Aggressive physical offense.", weakAgainst: ["Psychic", "Flying", "Fairy"], team: [] },
-                { name: "Hassel", title: "Art Teacher", description: "Dragon pressure and high damage turns.", weakAgainst: ["Ice", "Dragon", "Fairy"], team: [] },
-                { name: "Saguaro", title: "Home Ec Teacher", description: "Steady tempo with bulky picks.", weakAgainst: ["Fighting", "Ground", "Electric"], team: [] },
-                { name: "Miriam", title: "School Nurse", description: "Status pressure and sustain style.", weakAgainst: ["Ground", "Psychic", "Steel"], team: [] },
-                { name: "Raifort", title: "History Teacher", description: "Tricky offense and momentum pivots.", weakAgainst: ["Bug", "Ghost", "Dark"], team: [] },
-                { name: "Salvatore", title: "Language Teacher", description: "Mixed coverage with elemental pressure.", weakAgainst: ["Ground", "Rock", "Dragon"], team: [] },
-                { name: "Tyme", title: "Math Teacher", description: "Disciplined rock-solid battle plan.", weakAgainst: ["Water", "Grass", "Fighting", "Ground", "Steel"], team: [] }
+                {
+                    name: "Geeta",
+                    title: "Top Champion",
+                    description: "Champion-caliber balanced team.",
+                    weakAgainst: ["Fighting", "Ground", "Fire", "Water", "Dark"],
+                    team: [
+                        { pokemon: "Espathra", level: 69, weaknesses: ["Bug", "Ghost", "Dark"] },
+                        { pokemon: "Gogoat", level: 69, weaknesses: ["Fire", "Ice", "Poison", "Flying", "Bug"] },
+                        { pokemon: "Veluza", level: 69, weaknesses: ["Electric", "Grass", "Bug", "Ghost", "Dark"] },
+                        { pokemon: "Avalugg", level: 69, weaknesses: ["Fire", "Fighting", "Rock", "Steel"] },
+                        { pokemon: "Kingambit", level: 69, weaknesses: ["Fighting (x4)", "Ground", "Fire"] },
+                        { pokemon: "Glimmora", level: 70, weaknesses: ["Water", "Psychic", "Steel"] }
+                    ]
+                },
+                {
+                    name: "Jacq",
+                    title: "Biology Teacher",
+                    description: "Academic battle style with flexible coverage.",
+                    weakAgainst: ["Fire", "Fighting", "Dark"],
+                    team: [
+                        { pokemon: "Arcanine", level: 65, weaknesses: ["Water", "Ground", "Rock"] },
+                        { pokemon: "Lurantis", level: 65, weaknesses: ["Fire", "Ice", "Poison", "Flying", "Bug"] },
+                        { pokemon: "Swalot", level: 65, weaknesses: ["Ground", "Psychic"] },
+                        { pokemon: "Mudsdale", level: 65, weaknesses: ["Water", "Grass", "Ice"] },
+                        { pokemon: "Slowbro", level: 65, weaknesses: ["Electric", "Grass", "Bug", "Ghost", "Dark"] },
+                        { pokemon: "Farigiraf", level: 66, weaknesses: ["Bug", "Dark"] }
+                    ]
+                },
+                {
+                    name: "Dendra",
+                    title: "Battle Studies Teacher",
+                    description: "Aggressive physical offense.",
+                    weakAgainst: ["Psychic", "Flying", "Fairy"],
+                    team: [
+                        { pokemon: "Falinks", level: 65, weaknesses: ["Flying", "Psychic", "Fairy"] },
+                        { pokemon: "Paldean Tauros (Blaze Breed)", level: 65, weaknesses: ["Water", "Ground", "Flying", "Psychic"] },
+                        { pokemon: "Paldean Tauros (Aqua Breed)", level: 65, weaknesses: ["Electric", "Grass", "Flying", "Psychic", "Fairy"] },
+                        { pokemon: "Medicham", level: 65, weaknesses: ["Flying", "Ghost", "Fairy"] },
+                        { pokemon: "Hawlucha", level: 65, weaknesses: ["Electric", "Ice", "Flying", "Psychic", "Fairy"] },
+                        { pokemon: "Hariyama", level: 66, weaknesses: ["Flying", "Psychic", "Fairy"] }
+                    ]
+                },
+                {
+                    name: "Hassel",
+                    title: "Art Teacher",
+                    description: "Dragon pressure and high damage turns.",
+                    weakAgainst: ["Ice", "Dragon", "Fairy"],
+                    team: [
+                        { pokemon: "Noivern", level: 67, weaknesses: ["Ice (x4)", "Rock", "Dragon", "Fairy"] },
+                        { pokemon: "Haxorus", level: 67, weaknesses: ["Ice", "Dragon", "Fairy"] },
+                        { pokemon: "Dragalge", level: 67, weaknesses: ["Ground", "Ice", "Psychic", "Dragon"] },
+                        { pokemon: "Flapple", level: 67, weaknesses: ["Ice (x4)", "Poison", "Flying", "Bug", "Dragon", "Fairy"] },
+                        { pokemon: "Dragonite", level: 67, weaknesses: ["Ice (x4)", "Rock", "Dragon", "Fairy"] },
+                        { pokemon: "Baxcalibur", level: 68, weaknesses: ["Fighting", "Rock", "Steel", "Dragon", "Fairy"] }
+                    ]
+                },
+                {
+                    name: "Saguaro",
+                    title: "Home Ec Teacher",
+                    description: "Steady tempo with bulky picks.",
+                    weakAgainst: ["Fighting", "Ground", "Electric"],
+                    team: [
+                        { pokemon: "Pachirisu", level: 65, weaknesses: ["Ground"] },
+                        { pokemon: "Froslass", level: 65, weaknesses: ["Fire", "Rock", "Ghost", "Dark", "Steel"] },
+                        { pokemon: "Alomomola", level: 65, weaknesses: ["Electric", "Grass"] },
+                        { pokemon: "Vespiquen", level: 65, weaknesses: ["Rock (x4)", "Fire", "Electric", "Ice", "Flying"] },
+                        { pokemon: "Goodra", level: 65, weaknesses: ["Ice", "Dragon", "Fairy"] },
+                        { pokemon: "Hatterene", level: 66, weaknesses: ["Poison", "Ghost", "Steel"] }
+                    ]
+                },
+                {
+                    name: "Miriam",
+                    title: "School Nurse",
+                    description: "Status pressure and sustain style.",
+                    weakAgainst: ["Ground", "Psychic", "Steel"],
+                    team: [
+                        { pokemon: "Hypno", level: 65, weaknesses: ["Bug", "Ghost", "Dark"] },
+                        { pokemon: "Pincurchin", level: 65, weaknesses: ["Ground"] },
+                        { pokemon: "Sawsbuck", level: 65, weaknesses: ["Fire", "Ice", "Fighting", "Poison", "Flying", "Bug"] },
+                        { pokemon: "Glalie", level: 65, weaknesses: ["Fire", "Fighting", "Rock", "Steel"] },
+                        { pokemon: "Eelektross", level: 65, weaknesses: ["Ground"] },
+                        { pokemon: "Toxapex", level: 66, weaknesses: ["Electric", "Ground", "Psychic"] }
+                    ]
+                },
+                {
+                    name: "Raifort",
+                    title: "History Teacher",
+                    description: "Tricky offense and momentum pivots.",
+                    weakAgainst: ["Bug", "Ghost", "Dark"],
+                    team: [
+                        { pokemon: "Zoroark", level: 65, weaknesses: ["Fighting", "Bug", "Fairy"] },
+                        { pokemon: "Seviper", level: 65, weaknesses: ["Ground", "Psychic"] },
+                        { pokemon: "Grumpig", level: 65, weaknesses: ["Bug", "Ghost", "Dark"] },
+                        { pokemon: "Lumineon", level: 65, weaknesses: ["Electric", "Grass"] },
+                        { pokemon: "Scizor", level: 65, weaknesses: ["Fire (x4)"] },
+                        { pokemon: "Gengar", level: 66, weaknesses: ["Ground", "Ghost", "Dark", "Psychic"] }
+                    ]
+                },
+                {
+                    name: "Salvatore",
+                    title: "Language Teacher",
+                    description: "Mixed coverage with elemental pressure.",
+                    weakAgainst: ["Ground", "Rock", "Dragon"],
+                    team: [
+                        { pokemon: "Honchkrow", level: 65, weaknesses: ["Electric", "Ice", "Rock", "Fairy"] },
+                        { pokemon: "Persian", level: 65, weaknesses: ["Fighting"] },
+                        { pokemon: "Palossand", level: 65, weaknesses: ["Water", "Grass", "Ice", "Ghost", "Dark"] },
+                        { pokemon: "Glaceon", level: 65, weaknesses: ["Fire", "Fighting", "Rock", "Steel"] },
+                        { pokemon: "Gothitelle", level: 65, weaknesses: ["Bug", "Ghost", "Dark"] },
+                        { pokemon: "Raichu", level: 66, weaknesses: ["Ground"] }
+                    ]
+                },
+                {
+                    name: "Tyme",
+                    title: "Math Teacher",
+                    description: "Disciplined rock-solid battle plan.",
+                    weakAgainst: ["Water", "Grass", "Fighting", "Ground", "Steel"],
+                    team: [
+                        { pokemon: "Lycanroc (Midday)", level: 65, weaknesses: ["Water", "Grass", "Fighting", "Ground", "Steel"] },
+                        { pokemon: "Lycanroc (Midnight)", level: 65, weaknesses: ["Water", "Grass", "Fighting", "Ground", "Steel"] },
+                        { pokemon: "Drednaw", level: 65, weaknesses: ["Grass (x4)", "Electric", "Fighting", "Ground"] },
+                        { pokemon: "Stonjourner", level: 65, weaknesses: ["Water", "Grass", "Fighting", "Ground", "Steel"] },
+                        { pokemon: "Coalossal", level: 65, weaknesses: ["Water (x4)", "Ground (x4)", "Fighting", "Rock"] },
+                        { pokemon: "Garganacl", level: 66, weaknesses: ["Water", "Grass", "Fighting", "Ground", "Steel"] }
+                    ]
+                }
             ]
         }
     },
@@ -5175,7 +5293,11 @@ function renderAdventureMapPopout(objective) {
     const hasAcademyTournament = hasAcademyTournamentData(objective);
     const hasLeagueCircuit = isLeagueCircuitObjective(objective);
     const starterMatchup = getAdventureStarterMatchup(objective);
-    const weakAgainstTypes = starterMatchup?.weaknesses?.length ? starterMatchup.weaknesses : objective.weaknesses;
+    const weakAgainstTeam = [
+        ...(Array.isArray(objective?.team) ? objective.team : []),
+        ...(starterMatchup ? [starterMatchup] : [])
+    ];
+    const weakAgainstTypes = getTopAdventureWeaknessTypesFromTeam(weakAgainstTeam, objective.weaknesses, 4);
     const teamSection = !hasAcademyTournament && !hasLeagueCircuit && Array.isArray(objective.team) && objective.team.length
         ? `
             <div class="adventure-marker-popout-weaknesses">
@@ -5189,6 +5311,9 @@ function renderAdventureMapPopout(objective) {
         : (hasLeagueCircuit
             ? renderLeagueCircuitSection(objective)
             : "");
+    const modalDescription = (hasAcademyTournament || hasLeagueCircuit)
+        ? ""
+        : `<p class="adventure-map-modal-description">${escapeHtml(objective.description)}</p>`;
     const starterSection = !hasLeagueCircuit && Array.isArray(objective.starterOptions) && objective.starterOptions.length
         ? `
             <div class="adventure-marker-popout-weaknesses">
@@ -5220,10 +5345,10 @@ function renderAdventureMapPopout(objective) {
                     <span class="badge-tag">Lv.${escapeHtml(objective.level)}</span>
                     ${objective.gameIndicator ? `<span class="badge-tag">${escapeHtml(objective.gameIndicator)}</span>` : ""}
                 </div>
-                <p class="adventure-map-modal-description">${escapeHtml(objective.description)}</p>
+                ${tournamentSection}
+                ${modalDescription}
                 ${teamSection}
                 ${starterSection}
-                ${tournamentSection}
                 ${weakAgainstSection}
             </article>
         `;
@@ -5259,6 +5384,33 @@ function extractWeaknessTypes(weaknesses) {
     });
 
     return Array.from(matchedTypes);
+}
+
+function getTopAdventureWeaknessTypesFromTeam(teamList, fallbackWeaknesses = [], limit = 4) {
+    const maxItems = Number.isFinite(Number(limit)) ? Math.max(1, Number(limit)) : 4;
+    const weaknessCountByType = new Map();
+
+    if (Array.isArray(teamList)) {
+        teamList.forEach(entry => {
+            const weaknessTypes = extractWeaknessTypes(entry?.weaknesses);
+            weaknessTypes.forEach(typeName => {
+                weaknessCountByType.set(typeName, (weaknessCountByType.get(typeName) || 0) + 1);
+            });
+        });
+    }
+
+    const rankedTypes = Array.from(weaknessCountByType.entries())
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, maxItems)
+        .map(([typeName]) => capitalize(typeName));
+
+    if (rankedTypes.length) {
+        return rankedTypes;
+    }
+
+    return extractWeaknessTypes(fallbackWeaknesses)
+        .slice(0, maxItems)
+        .map(typeName => capitalize(typeName));
 }
 
 function getAdventureBestCounters(weaknesses) {
@@ -5495,15 +5647,11 @@ function renderAdventureStarterOptions(starterList, selectedStarterKey = null) {
                 const name = escapeHtml(entry?.pokemon || "Unknown");
                 const level = entry?.level ? `Lv.${escapeHtml(String(entry.level))}` : "Lv.?";
                 const tooltip = buildAdventureOpponentTooltip(entry?.weaknesses);
-                const label = entry?.starterKey
-                    ? `If you chose ${escapeHtml(capitalize(entry.starterKey))}`
-                    : "Starter matchup";
 
                 return `
                     <li class="adventure-team-item ${selectedStarter ? "selected" : ""}" data-weaknesses="${escapeHtml(tooltip)}">
                         <span class="adventure-team-item-name">${name}</span>
                         <span class="adventure-team-item-level">${level}</span>
-                        <span class="adventure-team-item-note">${label}</span>
                     </li>
                 `;
             }).join("")}
@@ -5514,6 +5662,16 @@ function renderAdventureStarterOptions(starterList, selectedStarterKey = null) {
 function getAdventureStarterMatchup(objective, gameKey = currentGame) {
     if (!Array.isArray(objective?.starterOptions) || !objective.starterOptions.length) {
         return null;
+    }
+
+    const leaderName = String(objective?.leader || "").trim().toLowerCase();
+    const objectiveName = String(objective?.name || "").trim().toLowerCase();
+    const isNemonaBattle = leaderName === "nemona" || objectiveName.includes("nemona");
+    if (isNemonaBattle) {
+        const nemonaMatchup = getNemonaStarterMatchup(objective, gameKey);
+        if (nemonaMatchup) {
+            return nemonaMatchup;
+        }
     }
 
     const selectedStarter = getAdventureStarterChoice(gameKey);
@@ -5531,6 +5689,120 @@ function isLeagueCircuitObjective(objective) {
 
 function getLeagueCircuitObjectives(gameKey = currentGame) {
     return getAdventureBaseObjectives(gameKey).filter(objective => isLeagueCircuitObjective(objective));
+}
+
+function getCliveStarterReferenceObjective(gameKey = currentGame) {
+    return getAdventureBaseObjectives(gameKey).find(objective => {
+        const leader = String(objective?.leader || "").toLowerCase();
+        const name = String(objective?.name || "").toLowerCase();
+        return leader === "director clavell" || name.includes("team star boss: clive");
+    }) || null;
+}
+
+function getNemonaStarterMatchup(objective = null, gameKey = currentGame) {
+    const selectedStarter = getAdventureStarterChoice(gameKey);
+    const weakToPlayerByStarter = {
+        sprigatito: "quaquaval",
+        fuecoco: "meowscarada",
+        quaxly: "skeledirge"
+    };
+    const targetPokemon = weakToPlayerByStarter[selectedStarter];
+
+    const pickFromOptions = options => {
+        if (!Array.isArray(options) || !options.length) {
+            return null;
+        }
+
+        if (targetPokemon) {
+            const targeted = options.find(entry => String(entry?.pokemon || "").trim().toLowerCase() === targetPokemon);
+            if (targeted) {
+                return targeted;
+            }
+        }
+
+        return options.find(entry => entry?.starterKey === selectedStarter) || options[0] || null;
+    };
+
+    const directMatch = pickFromOptions(objective?.starterOptions);
+    if (directMatch) {
+        return directMatch;
+    }
+
+    const cliveObjective = getCliveStarterReferenceObjective(gameKey);
+    return pickFromOptions(cliveObjective?.starterOptions);
+}
+
+function getDirectorClavellStarterMatchup(gameKey = currentGame) {
+    const cliveObjective = getCliveStarterReferenceObjective(gameKey);
+    if (!Array.isArray(cliveObjective?.starterOptions) || !cliveObjective.starterOptions.length) {
+        return null;
+    }
+
+    const selectedStarter = getAdventureStarterChoice(gameKey);
+    const counterByStarter = {
+        sprigatito: "skeledirge",
+        fuecoco: "quaquaval",
+        quaxly: "meowscarada"
+    };
+    const counterPokemon = counterByStarter[selectedStarter];
+
+    if (counterPokemon) {
+        const counterMatchup = cliveObjective.starterOptions.find(entry => {
+            const pokemonName = String(entry?.pokemon || "").trim().toLowerCase();
+            return pokemonName === counterPokemon;
+        });
+        if (counterMatchup) {
+            return counterMatchup;
+        }
+    }
+
+    return getAdventureStarterMatchup(cliveObjective, gameKey);
+}
+
+function resolveAcademyTournamentTrainerData(trainer, objective = null, gameKey = currentGame) {
+    if (!trainer) {
+        return {
+            trainer,
+            team: [],
+            weakAgainst: []
+        };
+    }
+
+    const trainerName = String(trainer?.name || "").trim().toLowerCase();
+    const objectiveName = String(objective?.name || "").trim().toLowerCase();
+    const isAcademyAceTournament = objectiveName === "academy ace touranment";
+    const isDirectorClavell = trainerName === "director clavell";
+    const isNemona = trainerName === "nemona";
+    let starterMatchup = null;
+
+    if (isAcademyAceTournament && isDirectorClavell) {
+        starterMatchup = getDirectorClavellStarterMatchup(gameKey);
+    } else if (isNemona) {
+        starterMatchup = getNemonaStarterMatchup(objective, gameKey);
+    }
+    const sourceTeam = Array.isArray(trainer?.team) ? trainer.team : [];
+    const team = sourceTeam.map(entry => {
+        const pokemonLabel = String(entry?.pokemon || "").toLowerCase();
+        const isStarterPlaceholder = pokemonLabel.includes("starter (depends on your pick)");
+
+        if (!isStarterPlaceholder || !starterMatchup) {
+            return entry;
+        }
+
+        return {
+            ...entry,
+            pokemon: starterMatchup.pokemon || entry.pokemon,
+            weaknesses: Array.isArray(starterMatchup.weaknesses) ? starterMatchup.weaknesses : [],
+            hideWeaknesses: false,
+            level: starterMatchup.level || entry.level
+        };
+    });
+
+    return {
+        trainer,
+        team,
+        weakAgainst: trainer?.weakAgainst || []
+    };
 }
 
 function createLeagueCircuitTrainerEntry(objective) {
@@ -5562,18 +5834,19 @@ function renderAcademyTournamentTrainerButtons(trainers) {
     `).join("");
 }
 
-function renderAcademyTournamentTrainerDetail(trainer) {
+function renderAcademyTournamentTrainerDetail(trainer, objective = null) {
     if (!trainer) {
         return '<div class="adventure-team-empty">No trainer selected.</div>';
     }
 
-    const weakAgainst = Array.isArray(trainer.weakAgainst) ? trainer.weakAgainst : [];
+    const resolvedTrainer = resolveAcademyTournamentTrainerData(trainer, objective);
+    const weakAgainst = getTopAdventureWeaknessTypesFromTeam(resolvedTrainer.team, resolvedTrainer.weakAgainst, 4);
     const teamSection = trainer.hideTeamSection
         ? ""
         : `
             <div class="adventure-marker-popout-weaknesses">
                 <h4>Team (hover for weaknesses)</h4>
-                ${renderAdventureTeamList(trainer.team || [])}
+                ${renderAdventureTeamList(resolvedTrainer.team)}
             </div>
         `;
     return `
@@ -5593,18 +5866,16 @@ function renderAcademyTournamentTrainerDetail(trainer) {
 function renderAcademyTournamentSection(objective) {
     if (!hasAcademyTournamentData(objective)) return "";
     const trainers = objective.academyTournament.trainers;
-    const sectionTitle = objective.academyTournament.sectionTitle || "Possible Trainers (select one)";
 
     return `
-        <section class="adventure-tournament-panel" data-objective-id="${objective.id}">
-            <h4>${escapeHtml(sectionTitle)}</h4>
+        <div class="adventure-tournament-panel" data-objective-id="${objective.id}">
             <div class="adventure-trainer-options">
                 ${renderAcademyTournamentTrainerButtons(trainers)}
             </div>
             <div class="adventure-trainer-detail" data-trainer-detail>
-                ${renderAcademyTournamentTrainerDetail(trainers[0])}
+                ${renderAcademyTournamentTrainerDetail(trainers[0], objective)}
             </div>
-        </section>
+        </div>
     `;
 }
 
@@ -5618,8 +5889,7 @@ function renderLeagueCircuitSection(objective) {
     const selectedTrainer = trainers.find(entry => Number(entry.objectiveId) === Number(objective.id)) || trainers[0];
 
     return `
-        <section class="adventure-tournament-panel adventure-league-panel" data-objective-id="${objective.id}">
-            <h4>Elite Four + Champion Circuit</h4>
+        <div class="adventure-tournament-panel adventure-league-panel" data-objective-id="${objective.id}">
             <div class="adventure-trainer-options">
                 ${trainers.map(entry => `
                     <button
@@ -5633,7 +5903,7 @@ function renderLeagueCircuitSection(objective) {
             <div class="adventure-trainer-detail" data-trainer-detail>
                 ${renderAcademyTournamentTrainerDetail(selectedTrainer)}
             </div>
-        </section>
+        </div>
     `;
 }
 
@@ -5655,7 +5925,7 @@ function bindAcademyTournamentSection(objective) {
             if (!trainer) return;
 
             options.forEach(item => item.classList.toggle('active', item === option));
-            detailEl.innerHTML = renderAcademyTournamentTrainerDetail(trainer);
+            detailEl.innerHTML = renderAcademyTournamentTrainerDetail(trainer, objective);
             enrichAdventureOpponentWeaknessTooltips(detailEl);
         });
     });
@@ -5821,7 +6091,11 @@ function renderSwordShieldAdventureDetail(objective) {
     const meta = getAdventureCategoryMeta(objective.category);
     const starterMatchup = getAdventureStarterMatchup(objective, "sword-shield");
     const selectedStarter = getAdventureStarterChoice("sword-shield");
-    const weakAgainstTypes = starterMatchup?.weaknesses?.length ? starterMatchup.weaknesses : objective.weaknesses;
+    const weakAgainstTeam = [
+        ...(Array.isArray(objective?.team) ? objective.team : []),
+        ...(starterMatchup ? [starterMatchup] : [])
+    ];
+    const weakAgainstTypes = getTopAdventureWeaknessTypesFromTeam(weakAgainstTeam, objective.weaknesses, 4);
     const starterSection = Array.isArray(objective.starterOptions) && objective.starterOptions.length
         ? `
             <div class="adventure-marker-popout-weaknesses">

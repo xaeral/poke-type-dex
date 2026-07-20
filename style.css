@@ -3042,7 +3042,6 @@ button#searchButton:hover{
     border-radius:16px;
     box-shadow:0 30px 70px rgba(0,0,0,.52);
     padding:16px;
-    padding-right:56px;
     animation:adventureModalIn .24s ease;
     pointer-events:auto;
 }
@@ -3059,10 +3058,11 @@ button#searchButton:hover{
 .adventure-map-modal-title{
     margin:0;
     font-size:1.06rem;
+    padding-right:40px;
 }
 
 .adventure-map-modal-description{
-    margin:10px 0 0;
+    margin:8px 0 0;
     color:var(--muted);
     line-height:1.55;
 }
@@ -3132,7 +3132,7 @@ button#searchButton:hover{
     display:flex;
     flex-wrap:wrap;
     gap:6px;
-    margin-top:6px;
+    margin-top:4px;
 }
 
 .adventure-marker-popout-description{
@@ -3250,6 +3250,12 @@ button#searchButton:hover{
     white-space:pre-line;
 }
 
+.adventure-map-modal .adventure-team-item:hover::after,
+.adventure-map-modal .adventure-team-variant-item:hover::after{
+    top:auto;
+    bottom:calc(100% + 8px);
+}
+
 .adventure-team-variants{
     margin-top:10px;
     border-top:1px solid rgba(255,255,255,.1);
@@ -3361,17 +3367,9 @@ button#searchButton:hover{
 }
 
 .adventure-tournament-panel{
-    margin-top:10px;
-    padding:10px;
-    border-radius:12px;
-    border:1px solid rgba(255,255,255,.1);
-    background:rgba(255,255,255,.02);
-}
-
-.adventure-tournament-panel h4{
-    margin:0 0 8px;
-    font-size:.82rem;
-    line-height:1.2;
+    margin-top:8px;
+    display:grid;
+    gap:8px;
 }
 
 .adventure-trainer-options{
@@ -3396,7 +3394,7 @@ button#searchButton:hover{
 }
 
 .adventure-trainer-detail{
-    margin-top:10px;
+    margin-top:0;
 }
 
 .adventure-trainer-detail-card{
