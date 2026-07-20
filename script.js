@@ -9,6 +9,7 @@ const pokemonAvailabilityCache = new Map();
 const availablePokemonCatalogCache = new Map();
 const availablePokemonProgressCache = new Map();
 const availablePokemonProgressState = new Map();
+let scarletVioletRosterPromise = null;
 let searchRequestToken = 0;
 let suggestionUpdateTimer = null;
 let suggestionRequestToken = 0;
@@ -2294,6 +2295,89 @@ function normalize(value) {
     return value.trim().toLowerCase();
 }
 
+function toPokemonApiName(value) {
+    const cleaned = String(value || "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[.'’:]/g, "")
+        .replace(/♀/g, "-f")
+        .replace(/♂/g, "-m")
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+
+    return cleaned;
+}
+
+function parsePokemonRosterText(text) {
+    const seen = new Set();
+    const names = [];
+    text.split(/\r?\n/).forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("-")) return;
+
+        const name = toPokemonApiName(trimmed);
+        if (!name || seen.has(name)) return;
+
+        seen.add(name);
+        names.push(name);
+    });
+
+    return names;
+}
+
+function isRosterMatch(name, nameSet) {
+    let candidate = normalize(name);
+    while (candidate) {
+        if (nameSet.has(candidate)) return true;
+        const cutIndex = candidate.lastIndexOf("-");
+        if (cutIndex <= 0) break;
+        candidate = candidate.slice(0, cutIndex);
+    }
+    return false;
+}
+
+async function loadScarletVioletRoster() {
+    if (!scarletVioletRosterPromise) {
+        scarletVioletRosterPromise = (async () => {
+            try {
+                const response = await fetch("./Pokemon_SV_All_Pokemon.txt");
+                if (!response.ok) return { names: [], nameSet: new Set() };
+
+                const text = await response.text();
+                const names = parsePokemonRosterText(text);
+                return { names, nameSet: new Set(names) };
+            } catch {
+                return { names: [], nameSet: new Set() };
+            }
+        })();
+    }
+
+    return scarletVioletRosterPromise;
+}
+
+function toAvailablePokemonCatalogEntry(pokemon) {
+    return {
+        name: pokemon.name,
+        searchName: normalize(pokemon.name),
+        typeKeys: pokemon.types.map(entry => entry.type.name.toLowerCase()),
+        types: pokemon.types.map(entry => capitalize(entry.type.name)),
+        sprite: pokemon.sprites.other?.["official-artwork"]?.front_default || pokemon.sprites.front_default || ""
+    };
+}
+
+async function getSearchablePokemonNames(gameKey = currentGame) {
+    if (isScarletVioletGame(gameKey)) {
+        const roster = await loadScarletVioletRoster();
+        if (roster.names.length) return roster.names;
+    }
+
+    return pokemonNames;
+}
+
 function capitalize(value) {
     return value.replace(/(^|\s|-)(\S)/g, (_, prefix, char) => `${prefix}${char.toUpperCase()}`);
 }
@@ -2423,13 +2507,45 @@ function applyGameSelection(gameKey, options = {}) {
 async function getPokemonData(name) {
     const key = normalize(name);
     if (pokemonDataCache.has(key)) return pokemonDataCache.get(key);
+
     const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${key}`);
-    if (!response.ok) {
+    if (response.ok) {
+        const data = await response.json();
+        pokemonDataCache.set(key, data);
+        if (data?.name && data.name !== key) {
+            pokemonDataCache.set(data.name, data);
+        }
+        return data;
+    }
+
+    // Some roster names are species names (for example, toxtricity) while
+    // the pokemon endpoint only exposes form names (for example, toxtricity-amped).
+    try {
+        const speciesResponse = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${key}`);
+        if (!speciesResponse.ok) {
+            throw new Error("Pokémon not found");
+        }
+
+        const species = await speciesResponse.json();
+        const defaultVariety = (species.varieties || []).find(variety => variety.is_default)?.pokemon?.name
+            || species.varieties?.[0]?.pokemon?.name;
+
+        if (!defaultVariety) {
+            throw new Error("Pokémon not found");
+        }
+
+        const fallbackResponse = await fetch(`https://pokeapi.co/api/v2/pokemon/${defaultVariety}`);
+        if (!fallbackResponse.ok) {
+            throw new Error("Pokémon not found");
+        }
+
+        const fallbackData = await fallbackResponse.json();
+        pokemonDataCache.set(key, fallbackData);
+        pokemonDataCache.set(fallbackData.name, fallbackData);
+        return fallbackData;
+    } catch {
         throw new Error("Pokémon not found");
     }
-    const data = await response.json();
-    pokemonDataCache.set(key, data);
-    return data;
 }
 
 function normalizeTeamMember(member) {
@@ -2483,6 +2599,15 @@ async function getPokemonAvailability(name, gameKey) {
     const cacheKey = `${normalize(name)}::${gameKey}`;
     if (pokemonAvailabilityCache.has(cacheKey)) return pokemonAvailabilityCache.get(cacheKey);
 
+    if (isScarletVioletGame(gameKey)) {
+        const roster = await loadScarletVioletRoster();
+        if (roster.names.length) {
+            const available = isRosterMatch(name, roster.nameSet);
+            pokemonAvailabilityCache.set(cacheKey, available);
+            return available;
+        }
+    }
+
     try {
         const pokemon = await getPokemonData(name);
         const species = await getSpeciesData(pokemon.species?.url);
@@ -2501,6 +2626,27 @@ async function getAvailablePokemonCatalog(gameKey) {
     if (availablePokemonCatalogCache.has(cacheKey)) return availablePokemonCatalogCache.get(cacheKey);
 
     const promise = (async () => {
+        if (isScarletVioletGame(cacheKey)) {
+            const roster = await loadScarletVioletRoster();
+            if (roster.names.length) {
+                const catalog = [];
+                const batchSize = 20;
+                for (let index = 0; index < roster.names.length; index += batchSize) {
+                    const batch = roster.names.slice(index, index + batchSize);
+                    const batchResults = await Promise.all(batch.map(async name => {
+                        try {
+                            const pokemon = await getPokemonData(name);
+                            return toAvailablePokemonCatalogEntry(pokemon);
+                        } catch {
+                            return null;
+                        }
+                    }));
+                    catalog.push(...batchResults.filter(Boolean));
+                }
+                return catalog;
+            }
+        }
+
         const dexNames = getGamePokedexes(cacheKey);
         if (!dexNames.length) return [];
 
@@ -2556,13 +2702,7 @@ async function getAvailablePokemonCatalog(gameKey) {
             const batchResults = await Promise.all(batch.map(async name => {
                 try {
                     const pokemon = await getPokemonData(name);
-                    return {
-                        name: pokemon.name,
-                        searchName: normalize(pokemon.name),
-                        typeKeys: pokemon.types.map(entry => entry.type.name.toLowerCase()),
-                        types: pokemon.types.map(entry => capitalize(entry.type.name)),
-                        sprite: pokemon.sprites.other?.["official-artwork"]?.front_default || pokemon.sprites.front_default || ""
-                    };
+                    return toAvailablePokemonCatalogEntry(pokemon);
                 } catch {
                     return null;
                 }
@@ -2606,6 +2746,41 @@ async function getAvailablePokemonCatalogProgress(gameKey) {
     const runToken = progressState.token;
 
     const promise = (async () => {
+        if (isScarletVioletGame(cacheKey)) {
+            const roster = await loadScarletVioletRoster();
+            if (roster.names.length) {
+                const catalog = [];
+                const pokemonBatchSize = 12;
+
+                for (let index = 0; index < roster.names.length; index += pokemonBatchSize) {
+                    const batch = roster.names.slice(index, index + pokemonBatchSize);
+                    const batchResults = await Promise.all(batch.map(async name => {
+                        try {
+                            const pokemon = await getPokemonData(name);
+                            return toAvailablePokemonCatalogEntry(pokemon);
+                        } catch {
+                            return null;
+                        }
+                    }));
+
+                    const cleanBatch = batchResults.filter(Boolean);
+                    catalog.push(...cleanBatch);
+                    if (runToken === progressState.token && cleanBatch.length) {
+                        progressState.catalog = catalog.slice();
+                        const shouldRefresh = Date.now() - progressState.lastRefreshAt > 120 || index + pokemonBatchSize >= roster.names.length;
+                        if (currentGame === cacheKey && shouldRefresh) {
+                            progressState.lastRefreshAt = Date.now();
+                            updateAvailablePokemonBrowser();
+                        }
+                    }
+                }
+
+                progressState.catalog = catalog.slice();
+                progressState.loading = false;
+                return catalog;
+            }
+        }
+
         const dexNames = getGamePokedexes(cacheKey);
         if (!dexNames.length) return [];
 
@@ -2662,13 +2837,7 @@ async function getAvailablePokemonCatalogProgress(gameKey) {
             const batchResults = await Promise.all(batch.map(async name => {
                 try {
                     const pokemon = await getPokemonData(name);
-                    return {
-                        name: pokemon.name,
-                        searchName: normalize(pokemon.name),
-                        typeKeys: pokemon.types.map(entry => entry.type.name.toLowerCase()),
-                        types: pokemon.types.map(entry => capitalize(entry.type.name)),
-                        sprite: pokemon.sprites.other?.["official-artwork"]?.front_default || pokemon.sprites.front_default || ""
-                    };
+                    return toAvailablePokemonCatalogEntry(pokemon);
                 } catch {
                     return null;
                 }
@@ -2873,14 +3042,14 @@ function renderAvailablePokemonBrowser() {
     updateAvailablePokemonBrowser();
 }
 
-async function filterSuggestionsByGame(matches) {
-    if (!currentGame) return matches.slice(0, 12);
+async function filterSuggestionsByGame(matches, gameKey = currentGame) {
+    if (!gameKey || isScarletVioletGame(gameKey)) return matches.slice(0, 12);
 
     const candidates = matches.slice(0, 12);
     try {
         const results = await Promise.all(candidates.map(async item => ({
             item,
-            available: await getPokemonAvailability(item.name, currentGame)
+            available: await getPokemonAvailability(item.name, gameKey)
         })));
         const filtered = results.filter(result => result.available).map(result => result.item);
         return filtered.length ? filtered : candidates;
@@ -2922,7 +3091,7 @@ function renderStatBadge(label, value, variant) {
     return `<span class="planner-stat-badge planner-stat-${variant}">${label}<strong>${value}</strong></span>`;
 }
 
-function updateSuggestions(search) {
+async function updateSuggestions(search) {
     const query = normalize(search);
     const token = ++suggestionRequestToken;
 
@@ -2933,31 +3102,41 @@ function updateSuggestions(search) {
         return;
     }
 
-    const matches = pokemonNames
-        .map(name => ({ name, score: fuzzyScore(query, name) }))
-        .filter(item => item.score > 0)
-        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
-        .slice(0, 40);
+    try {
+        const sourceNames = await getSearchablePokemonNames(currentGame);
+        if (token !== suggestionRequestToken) return;
 
-    filterSuggestionsByGame(matches)
-        .then(visibleMatches => {
-            if (token !== suggestionRequestToken) return;
+        const matches = sourceNames
+            .map(name => ({ name, score: fuzzyScore(query, name) }))
+            .filter(item => item.score > 0)
+            .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+            .slice(0, 40);
 
-            suggestionBox.classList.remove("hidden");
-            suggestionBox.innerHTML = visibleMatches.length
-                ? visibleMatches.map(item => `<button type="button" class="suggestion-item">${capitalize(item.name)}</button>`).join("")
-                : `<div class="suggestion-empty">No matches found</div>`;
-            selectedSuggestionIndex = -1;
-        })
-        .catch(() => {
-            if (token !== suggestionRequestToken) return;
+        const visibleMatches = await filterSuggestionsByGame(matches, currentGame);
+        if (token !== suggestionRequestToken) return;
 
-            suggestionBox.classList.remove("hidden");
-            suggestionBox.innerHTML = matches.slice(0, 12)
-                .map(item => `<button type="button" class="suggestion-item">${capitalize(item.name)}</button>`)
-                .join("");
-            selectedSuggestionIndex = -1;
-        });
+        suggestionBox.classList.remove("hidden");
+        suggestionBox.innerHTML = visibleMatches.length
+            ? visibleMatches.map(item => `<button type="button" class="suggestion-item" data-pokemon-name="${escapeHtml(item.name)}">${formatPokemonName(item.name)}</button>`).join("")
+            : `<div class="suggestion-empty">No matches found</div>`;
+        selectedSuggestionIndex = -1;
+    } catch {
+        if (token !== suggestionRequestToken) return;
+
+        const fallbackMatches = pokemonNames
+            .map(name => ({ name, score: fuzzyScore(query, name) }))
+            .filter(item => item.score > 0)
+            .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+            .slice(0, 12);
+
+        suggestionBox.classList.remove("hidden");
+        suggestionBox.innerHTML = fallbackMatches.length
+            ? fallbackMatches
+                .map(item => `<button type="button" class="suggestion-item" data-pokemon-name="${escapeHtml(item.name)}">${formatPokemonName(item.name)}</button>`)
+                .join("")
+            : `<div class="suggestion-empty">No matches found</div>`;
+        selectedSuggestionIndex = -1;
+    }
 }
 
 function scheduleSuggestionUpdate(value) {
@@ -2971,9 +3150,14 @@ function scheduleSuggestionUpdate(value) {
 }
 
 async function loadPokemonList() {
-    const response = await fetch("https://pokeapi.co/api/v2/pokemon?limit=2000");
-    const data = await response.json();
-    pokemonNames.splice(0, pokemonNames.length, ...data.results.map(p => p.name));
+    try {
+        const response = await fetch("https://pokeapi.co/api/v2/pokemon?limit=2000");
+        const data = await response.json();
+        pokemonNames.splice(0, pokemonNames.length, ...data.results.map(p => p.name));
+    } catch {
+        const roster = await loadScarletVioletRoster();
+        pokemonNames.splice(0, pokemonNames.length, ...roster.names);
+    }
     updateSuggestions("");
 }
 
@@ -3907,7 +4091,7 @@ input.addEventListener("keydown", event => {
         if (selectedSuggestionIndex >= 0) {
             const selected = items[selectedSuggestionIndex];
             if (selected) {
-                input.value = selected.textContent;
+                input.value = selected.dataset.pokemonName || selected.textContent;
                 suggestionBox.classList.add("hidden");
                 suggestionBox.innerHTML = "";
                 selectedSuggestionIndex = -1;
@@ -3940,7 +4124,7 @@ document.addEventListener("click", event => {
 suggestionBox.addEventListener("click", event => {
     const button = event.target.closest(".suggestion-item");
     if (!button) return;
-    input.value = button.textContent;
+    input.value = button.dataset.pokemonName || button.textContent;
     suggestionBox.classList.add("hidden");
     suggestionBox.innerHTML = "";
     selectedSuggestionIndex = -1;
