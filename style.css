@@ -2345,6 +2345,107 @@ button#searchButton:hover{
     gap:10px 12px;
 }
 
+.adventure-category-filters{
+    margin-top:10px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+
+.adventure-marker-editor-controls{
+    margin-top:10px;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:8px 10px;
+}
+
+.adventure-map-tools-panel{
+    margin-top:10px;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:12px;
+    background:rgba(255,255,255,.03);
+    padding:0;
+    overflow:hidden;
+}
+
+.adventure-map-tools-summary{
+    cursor:pointer;
+    list-style:none;
+    padding:10px 12px;
+    font-size:.84rem;
+    font-weight:700;
+    color:var(--muted);
+    user-select:none;
+    background:rgba(255,255,255,.03);
+}
+
+.adventure-map-tools-summary::-webkit-details-marker{
+    display:none;
+}
+
+.adventure-map-tools-wrap{
+    margin-top:0;
+    padding:10px 12px 12px;
+    border-top:1px solid rgba(255,255,255,.08);
+}
+
+.adventure-marker-editor-btn{
+    font:inherit;
+    border:1px solid rgba(255,255,255,.2);
+    border-radius:10px;
+    background:rgba(255,255,255,.04);
+    color:var(--text);
+    padding:7px 10px;
+    cursor:pointer;
+}
+
+.adventure-marker-editor-btn.active{
+    border-color:color-mix(in srgb, var(--accent) 55%, rgba(255,255,255,.2) 45%);
+    background:color-mix(in srgb, var(--accent) 16%, rgba(255,255,255,.04) 84%);
+}
+
+.adventure-marker-editor-coords{
+    color:var(--muted);
+    font-size:.86rem;
+}
+
+.adventure-filter-chip{
+    font:inherit;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:999px;
+    background:rgba(255,255,255,.04);
+    color:var(--text);
+    padding:7px 11px;
+    cursor:pointer;
+    transition:transform .16s ease, border-color .16s ease, background .16s ease;
+}
+
+.adventure-filter-chip:hover{
+    transform:translateY(-1px);
+}
+
+.adventure-filter-chip.active{
+    border-color:color-mix(in srgb, var(--chip-color, var(--accent)) 65%, rgba(255,255,255,.2) 35%);
+    background:color-mix(in srgb, var(--chip-color, var(--accent)) 20%, rgba(255,255,255,.04) 80%);
+}
+
+.adventure-filter-chip-icon{
+    width:20px;
+    height:20px;
+    border-radius:999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size:.72rem;
+    font-weight:800;
+    color:#fff;
+    background:color-mix(in srgb, var(--chip-color, var(--accent)) 68%, #0f1724 32%);
+}
+
 .adventure-starter-choice{
     display:flex;
     align-items:center;
@@ -2430,6 +2531,10 @@ button#searchButton:hover{
     grid-template-columns:33% 67%;
     gap:16px;
     align-items:stretch;
+}
+
+.adventure-layout-map{
+    grid-template-columns:minmax(260px, 30%) minmax(560px, 1fr) minmax(260px, 28%);
 }
 
 .adventure-column{
@@ -2553,9 +2658,23 @@ button#searchButton:hover{
     margin-top:4px;
     display:flex;
     align-items:center;
+    flex-wrap:wrap;
     gap:8px;
     color:var(--muted);
     font-size:0.9rem;
+}
+
+.adventure-game-indicator-chip{
+    display:inline-flex;
+    align-items:center;
+    border-radius:999px;
+    padding:2px 8px;
+    border:1px solid rgba(255,255,255,.22);
+    background:rgba(255,255,255,.08);
+    color:#e7efff;
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:.02em;
 }
 
 .adventure-category-icon{
@@ -2571,6 +2690,34 @@ button#searchButton:hover{
     color:#fff;
 }
 
+.adventure-category-icon.icon-image{
+    background:color-mix(in srgb, var(--category-icon-color, #a875ff) 72%, #0f1724 28%);
+    border:1px solid rgba(255,255,255,.5);
+    overflow:hidden;
+}
+
+.adventure-objective-image-icon{
+    object-fit:contain;
+    filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));
+}
+
+.adventure-category-icon .adventure-objective-image-icon{
+    width:12px;
+    height:12px;
+}
+
+.adventure-marker-dot .adventure-objective-image-icon{
+    width:18px;
+    height:18px;
+}
+
+.adventure-objective-image-icon-pair{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:1px;
+}
+
 .adventure-objective-level{
     margin-top:5px;
     font-size:0.88rem;
@@ -2579,25 +2726,52 @@ button#searchButton:hover{
 
 .adventure-map-column{
     position:relative;
+    isolation:isolate;
+    background:#1c3051;
     cursor:grab;
     touch-action:none;
     user-select:none;
+}
+
+.adventure-map-column.marker-edit-on{
+    cursor:crosshair;
+}
+
+.adventure-map-column.marker-edit-on::after{
+    content:"Marker Edit ON - only Legendary markers are draggable";
+    position:absolute;
+    left:12px;
+    top:12px;
+    z-index:1200;
+    padding:4px 10px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,.24);
+    background:rgba(9,14,22,.82);
+    color:#e7efff;
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:.02em;
+    pointer-events:none;
 }
 
 .adventure-detail-column{
     cursor:default;
     touch-action:auto;
     user-select:auto;
+    overflow:auto;
 }
 
 .adventure-static-detail{
     min-height:620px;
     height:100%;
     padding:12px;
-    overflow:auto;
+    overflow:visible;
 }
 
 .adventure-static-modal{
+    position:relative;
+    top:auto;
+    right:auto;
     width:100%;
     max-height:none;
 }
@@ -2612,10 +2786,11 @@ button#searchButton:hover{
 
 .adventure-map-zoom-controls{
     position:absolute;
-    top:10px;
-    right:10px;
-    z-index:12;
-    display:inline-flex;
+    left:12px;
+    bottom:12px;
+    z-index:1200;
+    display:flex;
+    flex-direction:column;
     align-items:center;
     gap:6px;
     padding:6px;
@@ -2623,6 +2798,7 @@ button#searchButton:hover{
     background:rgba(9,14,22,.78);
     border:1px solid rgba(255,255,255,.16);
     box-shadow:0 10px 24px rgba(0,0,0,.26);
+    pointer-events:auto;
 }
 
 .adventure-map-zoom-btn{
@@ -2656,6 +2832,57 @@ button#searchButton:hover{
     overflow:hidden;
     border-radius:inherit;
     min-height:620px;
+    background:#1c3051;
+}
+
+.adventure-map-viewport.leaflet-container,
+.adventure-map-viewport .leaflet-container,
+.adventure-map-viewport .leaflet-pane,
+.adventure-map-viewport .leaflet-tile-pane,
+.adventure-map-viewport .leaflet-overlay-pane{
+    background:#1c3051;
+}
+
+.adventure-leaflet-marker-wrap{
+    background:transparent;
+    border:none;
+}
+
+.adventure-zone-label-wrap{
+    background:transparent;
+    border:none;
+    pointer-events:none;
+}
+
+.adventure-zone-label{
+    position:relative;
+    display:inline-block;
+    transform:translate(-50%, -50%);
+    color:#ffffff;
+    font-weight:800;
+    font-size:1.45rem;
+    line-height:1.05;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    white-space:nowrap;
+    text-align:center;
+    -webkit-text-stroke:2px rgba(0,0,0,.9);
+    paint-order:stroke fill;
+    text-shadow:
+        0 2px 4px rgba(0,0,0,.55),
+        0 0 2px rgba(0,0,0,.85);
+    pointer-events:none;
+    transition:opacity .18s ease;
+}
+
+.adventure-zone-label.crater{
+    font-size:1.35rem;
+    letter-spacing:.015em;
+    white-space:pre-line;
+}
+
+.adventure-map-viewport.zone-labels-hidden .adventure-zone-label{
+    opacity:0;
 }
 
 .adventure-map-viewport.dragging{
@@ -2671,16 +2898,15 @@ button#searchButton:hover{
 }
 
 .adventure-map-overlay[data-mode="modal"]{
-    pointer-events:auto;
-    display:grid;
-    place-items:center;
-    background:rgba(8,12,20,.68);
-    padding:10px;
+    pointer-events:none;
+    display:block;
+    background:transparent;
+    padding:0;
 }
 
 .adventure-map-column.modal-open .adventure-map-zoom-controls{
-    pointer-events:none;
-    opacity:.35;
+    pointer-events:auto;
+    opacity:1;
 }
 
 .adventure-map-inner{
@@ -2753,6 +2979,21 @@ button#searchButton:hover{
     filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));
 }
 
+.adventure-legendary-marker-image,
+.adventure-stake-marker-image{
+    width:30px;
+    height:30px;
+    object-fit:contain;
+    filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));
+}
+
+.adventure-marker.legendary-image .adventure-marker-dot,
+.adventure-marker.stake-image .adventure-marker-dot{
+    background:transparent;
+    border:none;
+    box-shadow:none;
+}
+
 .adventure-marker.completed .adventure-marker-dot{
     background:rgba(122,128,142,.55);
     border-color:rgba(219,224,234,.7);
@@ -2789,9 +3030,11 @@ button#searchButton:hover{
 }
 
 .adventure-map-modal{
-    position:relative;
-    width:min(980px, 96vw);
-    max-height:92%;
+    position:absolute;
+    top:12px;
+    right:12px;
+    width:min(520px, calc(100% - 24px));
+    max-height:calc(100% - 24px);
     overflow:auto;
     background:linear-gradient(165deg, rgba(22,30,44,.96), rgba(11,16,28,.96));
     border:1px solid rgba(255,255,255,.16);
@@ -2801,6 +3044,16 @@ button#searchButton:hover{
     padding:16px;
     padding-right:56px;
     animation:adventureModalIn .24s ease;
+    pointer-events:auto;
+}
+
+.adventure-static-detail .adventure-map-modal.adventure-static-modal{
+    position:relative;
+    top:auto;
+    right:auto;
+    width:100%;
+    max-height:none;
+    overflow:visible;
 }
 
 .adventure-map-modal-title{
@@ -2979,7 +3232,8 @@ button#searchButton:hover{
     content:attr(data-weaknesses);
     position:absolute;
     left:50%;
-    bottom:calc(100% + 8px);
+    top:calc(100% + 8px);
+    bottom:auto;
     transform:translateX(-50%);
     min-width:220px;
     max-width:min(420px, 84vw);
@@ -2993,7 +3247,7 @@ button#searchButton:hover{
     line-height:1.4;
     z-index:30;
     pointer-events:none;
-    white-space:normal;
+    white-space:pre-line;
 }
 
 .adventure-team-variants{
@@ -3046,7 +3300,8 @@ button#searchButton:hover{
     content:attr(data-weaknesses);
     position:absolute;
     left:50%;
-    bottom:calc(100% + 8px);
+    top:calc(100% + 8px);
+    bottom:auto;
     transform:translateX(-50%);
     min-width:220px;
     max-width:min(420px, 84vw);
@@ -3222,6 +3477,15 @@ button#searchButton:hover{
         grid-template-columns:1fr 1fr;
     }
 
+    .adventure-layout-map{
+        grid-template-columns:1fr 1fr;
+    }
+
+    .adventure-layout-map .adventure-list-column{
+        grid-column:1 / -1;
+        min-height:320px;
+    }
+
     .adventure-column{
         min-height:480px;
     }
@@ -3258,6 +3522,11 @@ button#searchButton:hover{
 @media (max-width:840px){
     .adventure-layout{
         grid-template-columns:1fr;
+    }
+
+    .adventure-layout-map .adventure-list-column{
+        grid-column:auto;
+        min-height:420px;
     }
 
     .adventure-marker-popout{

@@ -4,6 +4,7 @@ const typeDataCache = new Map();
 const abilityDataCache = new Map();
 const speciesDataCache = new Map();
 const evolutionChainCache = new Map();
+const adventureOpponentWeaknessCache = new Map();
 const pokemonAvailabilityCache = new Map();
 const availablePokemonCatalogCache = new Map();
 const availablePokemonProgressCache = new Map();
@@ -255,6 +256,9 @@ let currentPage = "reference";
 let coverageHoverToken = 0;
 let hoveredCoverageType = null;
 let currentGame = localStorage.getItem("pokemonGame") || "scarlet-violet";
+const paldeaMapFilterStorageKey = "paldeaMapFiltersV1";
+let selectedPaldeaMapPointId = null;
+let paldeaMapActiveFilters = new Set();
 
 function el(id){ return document.getElementById(id); }
 function q(selector){ return document.querySelector(selector); }
@@ -319,6 +323,9 @@ const objectiveCategoryMeta = {
     Gym: { color: "#4ea1ff", icon: "G", shortLabel: "Gym" },
     Titan: { color: "#ff9f43", icon: "T", shortLabel: "Titan" },
     "Team Star": { color: "#a875ff", icon: "S", shortLabel: "Team Star" },
+    Shrine: { color: "#ff5d8f", icon: "R", shortLabel: "Shrine" },
+    Stake: { color: "#00c2b8", icon: "K", shortLabel: "Stake" },
+    Legendary: { color: "#ffd84a", icon: "L", shortLabel: "Legendary" },
     "Post-Game": { color: "#34c759", icon: "P", shortLabel: "Post-Game" },
     DLC: { color: "#ff5d8f", icon: "D", shortLabel: "DLC" }
 };
@@ -331,7 +338,7 @@ const adventureMapBounds = {
     bottom: 100
 };
 
-const adventureDisplayCategories = new Set(["Gym", "Titan", "Team Star", "Post-Game", "DLC"]);
+const adventureDisplayCategories = new Set(["Gym", "Titan", "Team Star", "Stake", "Legendary", "Post-Game", "DLC"]);
 
 const adventureStarterOptionSets = {
     "scarlet-violet": [
@@ -393,6 +400,103 @@ const adventureMapGenieOffsetById = {
     16: { x: -1, y: 6.5 },
     17: { x: -4, y: 7 },
     18: { x: 0, y: 8 }
+};
+
+const adventurePermanentMarkerPositionsById = {
+    1: { xPercent: 32.2, yPercent: 26.93 },
+    2: { xPercent: 64.6, yPercent: 31.73 },
+    3: { xPercent: 70.7, yPercent: 28.42 },
+    4: { xPercent: 17.56, yPercent: 38.18 },
+    5: { xPercent: 33.5, yPercent: 33.06 },
+    6: { xPercent: 76.33, yPercent: 42.17 },
+    7: { xPercent: 67.17, yPercent: 32.03 },
+    8: { xPercent: 74.69, yPercent: 50.38 },
+    9: { xPercent: 33.84, yPercent: 46.35 },
+    10: { xPercent: 59.4, yPercent: 53.12 },
+    11: { xPercent: 41.51, yPercent: 53.76 },
+    12: { xPercent: 54.82, yPercent: 67.22 },
+    13: { xPercent: 23.66, yPercent: 18.14 },
+    14: { xPercent: 17.77, yPercent: 46.02 },
+    15: { xPercent: 55.73, yPercent: 62.37 },
+    16: { xPercent: 46.22, yPercent: 80.67 },
+    17: { xPercent: 83.45, yPercent: 60.44 },
+    18: { xPercent: 35.61, yPercent: 66.55 },
+    18.1: { xPercent: 48.34, yPercent: 30.77 },
+    18.2: { xPercent: 48.34, yPercent: 30.77 },
+    19: { xPercent: 40.81, yPercent: 35.31 },
+    25: { xPercent: 32.2, yPercent: 26.95 },
+    26: { xPercent: 70.7, yPercent: 28.41 },
+    27: { xPercent: 76.33, yPercent: 42.17 },
+    28: { xPercent: 33.84, yPercent: 46.35 },
+    29: { xPercent: 41.51, yPercent: 53.76 },
+    30: { xPercent: 54.82, yPercent: 67.22 },
+    31: { xPercent: 23.66, yPercent: 18.14 },
+    32: { xPercent: 55.73, yPercent: 62.37 },
+    33: { xPercent: 48.37, yPercent: 31.24 },
+    101: { xPercent: 50.98, yPercent: 19.94 },
+    102: { xPercent: 55.52, yPercent: 21.57 },
+    103: { xPercent: 62.1, yPercent: 34.01 },
+    104: { xPercent: 68.63, yPercent: 28.22 },
+    105: { xPercent: 61.31, yPercent: 15.75 },
+    106: { xPercent: 55.59, yPercent: 28.67 },
+    107: { xPercent: 53.75, yPercent: 24.99 },
+    108: { xPercent: 47.83, yPercent: 17.13 },
+    109: { xPercent: 59.58, yPercent: 15.22 },
+    110: { xPercent: 36.04, yPercent: 38.24 },
+    111: { xPercent: 31.48, yPercent: 18.32 },
+    112: { xPercent: 30.52, yPercent: 39.61 },
+    113: { xPercent: 23.62, yPercent: 30.72 },
+    114: { xPercent: 24.87, yPercent: 25.63 },
+    115: { xPercent: 18.84, yPercent: 34.04 },
+    116: { xPercent: 25.15, yPercent: 23.07 },
+    117: { xPercent: 34.46, yPercent: 45.96 },
+    118: { xPercent: 15.69, yPercent: 37.81 },
+    119: { xPercent: 31.51, yPercent: 63.61 },
+    120: { xPercent: 30.26, yPercent: 56.1 },
+    121: { xPercent: 29.74, yPercent: 54.57 },
+    122: { xPercent: 32.73, yPercent: 75.98 },
+    123: { xPercent: 32.42, yPercent: 66.81 },
+    124: { xPercent: 17.9, yPercent: 72.12 },
+    125: { xPercent: 19.12, yPercent: 60.32 },
+    126: { xPercent: 47.49, yPercent: 61.54 },
+    127: { xPercent: 27.52, yPercent: 75.41 },
+    128: { xPercent: 56.77, yPercent: 54.96 },
+    129: { xPercent: 76.53, yPercent: 59.4 },
+    130: { xPercent: 66.14, yPercent: 59.01 },
+    131: { xPercent: 77.46, yPercent: 63.72 },
+    132: { xPercent: 64.77, yPercent: 75.7 },
+    133: { xPercent: 80.06, yPercent: 47.1 },
+    134: { xPercent: 81.96, yPercent: 56.02 },
+    135: { xPercent: 69.51, yPercent: 67.32 },
+    136: { xPercent: 76.16, yPercent: 59.55 },
+    137: { xPercent: 17.79, yPercent: 38.6 },
+    138: { xPercent: 83.99, yPercent: 50.46 },
+    139: { xPercent: 24.53, yPercent: 66.4 },
+    140: { xPercent: 30.99, yPercent: 16.13 },
+    141: { xPercent: 73.72, yPercent: 56.39 },
+    142: { xPercent: 24.72, yPercent: 17.17 },
+    144: { xPercent: 41.12, yPercent: 35.04 },
+    145: { xPercent: 56.28, yPercent: 58.64 },
+    146: { xPercent: 71.15, yPercent: 76.84 },
+    147: { xPercent: 37.17, yPercent: 15.04 },
+    148: { xPercent: 20.79, yPercent: 76.15 },
+    149: { xPercent: 74.9, yPercent: 59.91 },
+    150: { xPercent: 36.28, yPercent: 40.57 },
+    151: { xPercent: 68.01, yPercent: 58.15 },
+    152: { xPercent: 69.19, yPercent: 22.54 },
+    153: { xPercent: 18.7, yPercent: 57.69 },
+    154: { xPercent: 49.16, yPercent: 52.56 },
+    155: { xPercent: 56.52, yPercent: 31.66 },
+    156: { xPercent: 51.08, yPercent: 55.86 },
+    157: { xPercent: 28.59, yPercent: 74.72 },
+    158: { xPercent: 49.09, yPercent: 41.81 },
+    159: { xPercent: 49.59, yPercent: 41.81 },
+    160: { xPercent: 48.98, yPercent: 42.26 },
+    161: { xPercent: 48.96, yPercent: 42.2 },
+    162: { xPercent: 49.59, yPercent: 68.66 },
+    163: { xPercent: 51.87, yPercent: 15.05 },
+    164: { xPercent: 24.33, yPercent: 50.05 },
+    165: { xPercent: 75.92, yPercent: 60.44 }
 };
 
 const adventureGuide = [
@@ -493,7 +597,7 @@ const adventureGuide = [
         immunities: ["Psychic"],
         team: [
             { pokemon: "Pawniard", level: 21 },
-            { pokemon: "Segin Starmobile", level: 20 }
+            { pokemon: "Segin Starmobile", level: 20, weaknesses: ["Fighting", "Bug", "Fairy"] }
         ]
     },
     {
@@ -535,7 +639,7 @@ const adventureGuide = [
         immunities: [],
         team: [
             { pokemon: "Torkoal", level: 27 },
-            { pokemon: "Schedar Starmobile", level: 26 }
+            { pokemon: "Schedar Starmobile", level: 26, weaknesses: ["Water", "Ground", "Rock"] }
         ]
     },
     {
@@ -596,7 +700,7 @@ const adventureGuide = [
         team: [
             { pokemon: "Skuntank", level: 32 },
             { pokemon: "Muk", level: 32 },
-            { pokemon: "Navi Starmobile", level: 33 }
+            { pokemon: "Navi Starmobile", level: 33, weaknesses: ["Ground", "Psychic"] }
         ]
     },
     {
@@ -724,7 +828,7 @@ const adventureGuide = [
             { pokemon: "Azumarill", level: 50 },
             { pokemon: "Wigglytuff", level: 50 },
             { pokemon: "Dachsbun", level: 50 },
-            { pokemon: "Ruchbah Starmobile", level: 51 }
+            { pokemon: "Ruchbah Starmobile", level: 51, weaknesses: ["Poison", "Steel"] }
         ]
     },
     {
@@ -746,7 +850,7 @@ const adventureGuide = [
             { pokemon: "Toxicroak", level: 55 },
             { pokemon: "Passimian", level: 55 },
             { pokemon: "Lucario", level: 55 },
-            { pokemon: "Caph Starmobile", level: 56 }
+            { pokemon: "Caph Starmobile", level: 56, weaknesses: ["Flying", "Psychic", "Fairy"] }
         ]
     },
     {
@@ -767,6 +871,55 @@ const adventureGuide = [
         team: [
             { pokemon: "Tatsugiri", level: 55 },
             { pokemon: "Dondozo", level: 55 }
+        ]
+    },
+    {
+        id: 18.1,
+        name: "Team Star Boss: Clive",
+        category: "Team Star",
+        type: "Various",
+        level: "60-61",
+        location: "Naranja / Uva Academy",
+        leader: "Director Clavell",
+        description: "Battle Clive in the Team Star finale before facing Cassiopeia.",
+        mapX: 49,
+        mapY: 58,
+        weaknesses: ["Water", "Ground", "Rock", "Fighting", "Ghost", "Dark", "Ice", "Dragon", "Fairy"],
+        resistances: [],
+        immunities: [],
+        team: [
+            { pokemon: "Oranguru / Indeedee", level: 60, hideWeaknesses: true },
+            { pokemon: "Houndoom", level: 60, weaknesses: ["Water", "Ground", "Rock", "Fighting"] },
+            { pokemon: "Abomasnow", level: 60, weaknesses: ["Fire (x4)", "Fighting", "Rock", "Poison", "Flying", "Bug", "Steel"] },
+            { pokemon: "Polteageist", level: 60, weaknesses: ["Ghost", "Dark"] }
+        ],
+        starterOptions: [
+            { starterKey: "sprigatito", pokemon: "Quaquaval", level: 61, weaknesses: ["Electric", "Grass", "Flying", "Psychic", "Fairy"] },
+            { starterKey: "fuecoco", pokemon: "Meowscarada", level: 61, weaknesses: ["Fire", "Ice", "Poison", "Flying", "Bug", "Fighting", "Fairy"] },
+            { starterKey: "quaxly", pokemon: "Skeledirge", level: 61, weaknesses: ["Water", "Ground", "Rock", "Ghost", "Dark"] }
+        ]
+    },
+    {
+        id: 18.2,
+        name: "Team Star Boss: Penny",
+        category: "Team Star",
+        type: "Various",
+        level: "62-63",
+        location: "Naranja / Uva Academy",
+        leader: "Penny",
+        description: "Face Cassiopeia and clear the final Team Star battle.",
+        mapX: 49,
+        mapY: 58,
+        weaknesses: ["Fighting", "Ground", "Poison", "Steel", "Rock"],
+        resistances: [],
+        immunities: [],
+        team: [
+            { pokemon: "Umbreon", level: 62, weaknesses: ["Fighting", "Bug", "Fairy"] },
+            { pokemon: "Vaporeon", level: 62, weaknesses: ["Electric", "Grass"] },
+            { pokemon: "Jolteon", level: 62, weaknesses: ["Ground"] },
+            { pokemon: "Flareon", level: 62, weaknesses: ["Water", "Ground", "Rock"] },
+            { pokemon: "Leafeon", level: 62, weaknesses: ["Fire", "Ice", "Poison", "Flying", "Bug"] },
+            { pokemon: "Sylveon", level: 63, weaknesses: ["Poison", "Steel"] }
         ]
     },
     {
@@ -1627,9 +1780,23 @@ let adventureResizeHandler = null;
 let adventureMapPositionState = null;
 let adventureDragState = null;
 let adventureSuppressMarkerClick = false;
+let adventureLeafletMap = null;
+let adventureLeafletMarkerLayer = null;
+let adventureLeafletZoneLabelLayer = null;
+let adventureLeafletFitZoom = 0;
+let adventureLeafletDefaultZoom = 0;
+const adventureMapZoneLabels = [
+    { name: "North Province", xPercent: 48.79, yPercent: 65.94, kind: "province" },
+    { name: "West Province", xPercent: 24.13, yPercent: 44.72, kind: "province" },
+    { name: "South Province", xPercent: 48.52, yPercent: 24.13, kind: "province" },
+    { name: "East Province", xPercent: 70.09, yPercent: 45.61, kind: "province" },
+    { name: "Greater Crater of Paldea", xPercent: 48.88, yPercent: 42.07, kind: "crater", labelLines: ["Great Crater", "of Paldea"] }
+];
 const adventureProgressStorageKey = "adventureGuideProgressV1";
 const adventureHideCompletedStorageKey = "adventureGuideHideCompletedV1";
 const adventureStarterChoiceStorageKey = "adventureGuideStarterChoiceV1";
+const adventureCategoryFilterStorageKey = "adventureGuideCategoryFiltersV1";
+const adventureMarkerOverrideStorageKey = "adventureGuideMarkerOverridesV1";
 let adventureMapAspectRatio = 1;
 const adventureMapBaseZoom = 1.28;
 const adventureMapZoomMin = 0.4;
@@ -1639,6 +1806,10 @@ let adventureMapZoomLevel = 1;
 let adventureCompletedObjectiveIds = new Set();
 let adventureHideCompleted = false;
 let adventureStarterChoices = {};
+let adventureCategoryFiltersByGame = {};
+let adventureMarkerOverridesByGame = {};
+let adventureMarkerEditMode = false;
+let adventureMarkerDragState = null;
 
 function loadAdventureProgress() {
     try {
@@ -1702,6 +1873,268 @@ function saveAdventureStarterChoices() {
     } catch {
         // Ignore storage write failures.
     }
+}
+
+function loadAdventureCategoryFilters() {
+    try {
+        const stored = localStorage.getItem(adventureCategoryFilterStorageKey);
+        const parsed = stored ? JSON.parse(stored) : {};
+        adventureCategoryFiltersByGame = parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+        adventureCategoryFiltersByGame = {};
+    }
+}
+
+function saveAdventureCategoryFilters() {
+    try {
+        localStorage.setItem(adventureCategoryFilterStorageKey, JSON.stringify(adventureCategoryFiltersByGame));
+    } catch {
+        // Ignore storage write failures.
+    }
+}
+
+function loadAdventureMarkerOverrides() {
+    try {
+        const stored = localStorage.getItem(adventureMarkerOverrideStorageKey);
+        const parsed = stored ? JSON.parse(stored) : {};
+        adventureMarkerOverridesByGame = parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+        adventureMarkerOverridesByGame = {};
+    }
+}
+
+function saveAdventureMarkerOverrides() {
+    try {
+        localStorage.setItem(adventureMarkerOverrideStorageKey, JSON.stringify(adventureMarkerOverridesByGame));
+    } catch {
+        // Ignore storage write failures.
+    }
+}
+
+function getAdventureMarkerOverride(id, gameKey = currentGame) {
+    const gameOverrides = adventureMarkerOverridesByGame?.[gameKey];
+    if (!gameOverrides || typeof gameOverrides !== "object") return null;
+    const value = gameOverrides[String(id)];
+    if (!value || typeof value !== "object") return null;
+
+    const x = Number(value.xPercent);
+    const y = Number(value.yPercent);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    return {
+        xPercent: Math.max(0, Math.min(100, x)),
+        yPercent: Math.max(0, Math.min(100, y))
+    };
+}
+
+function setAdventureMarkerOverride(id, xPercent, yPercent, gameKey = currentGame) {
+    const next = {
+        xPercent: Math.max(0, Math.min(100, Number(xPercent))),
+        yPercent: Math.max(0, Math.min(100, Number(yPercent)))
+    };
+    if (!Number.isFinite(next.xPercent) || !Number.isFinite(next.yPercent)) return;
+
+    const gameOverrides = {
+        ...(adventureMarkerOverridesByGame[gameKey] || {}),
+        [String(id)]: next
+    };
+
+    adventureMarkerOverridesByGame = {
+        ...adventureMarkerOverridesByGame,
+        [gameKey]: gameOverrides
+    };
+}
+
+function getAdventureMarkerOverridesForGame(gameKey = currentGame) {
+    return adventureMarkerOverridesByGame?.[gameKey] || {};
+}
+
+function getAdventureSupplementalObjectives() {
+    const chains = [
+        {
+            prefix: "Wo-Chien",
+            accentColor: "#8b5cf6",
+            stakeType: "Dark Stakes",
+            stakeImage: "./Images/maps/Wo-Chien Stake.png",
+            shrineName: "Grasswither Shrine",
+            shrineLocation: "South Province (Area One)",
+            shrineImage: "./Images/maps/Wo-Chien Shrine.png",
+            legendaryType: "Dark / Grass",
+            weaknesses: ["Fire", "Ice", "Poison", "Flying", "Bug", "Fighting", "Fairy"],
+            stakeLocations: [
+                { location: "South Province (Area Three)", mapX: 26, mapY: 68 },
+                { location: "South Province (Area Five)", mapX: 31, mapY: 73 },
+                { location: "South Province (Area One)", mapX: 18, mapY: 80 },
+                { location: "West Province (Area One)", mapX: 21, mapY: 58 },
+                { location: "West Province (Area Two)", mapX: 14, mapY: 49 },
+                { location: "Asado Desert", mapX: 25, mapY: 56 },
+                { location: "South Province (Area One)", mapX: 12, mapY: 75 },
+                { location: "South Province (Area Four)", mapX: 28, mapY: 63 }
+            ],
+            shrineMap: { mapX: 13, mapY: 78 }
+        },
+        {
+            prefix: "Chien-Pao",
+            accentColor: "#f7d13c",
+            stakeType: "Yellow Stakes",
+            stakeImage: "./Images/maps/Chien-Pao Stake.png",
+            shrineName: "Icerend Shrine",
+            shrineLocation: "West Province (Area One)",
+            shrineImage: "./Images/maps/Chien-Pao Shrine.png",
+            legendaryType: "Dark / Ice",
+            weaknesses: ["Fire", "Fighting", "Rock", "Steel", "Bug", "Fairy"],
+            stakeLocations: [
+                { location: "West Province (Area One)", mapX: 32, mapY: 21 },
+                { location: "West Province (Area One)", mapX: 27, mapY: 16 },
+                { location: "Glaseado Mountain", mapX: 44, mapY: 14 },
+                { location: "Glaseado Mountain", mapX: 51, mapY: 10 },
+                { location: "North Province (Area One)", mapX: 37, mapY: 27 },
+                { location: "North Province (Area Two)", mapX: 45, mapY: 20 },
+                { location: "Dalizapa Passage", mapX: 40, mapY: 24 },
+                { location: "West Province (Area Three)", mapX: 29, mapY: 31 }
+            ],
+            shrineMap: { mapX: 31, mapY: 10 }
+        },
+        {
+            prefix: "Ting-Lu",
+            accentColor: "#7ac74c",
+            stakeType: "Green Stakes",
+            stakeImage: "./Images/maps/Ting-Lu Stake.png",
+            shrineName: "Groundblight Shrine",
+            shrineLocation: "Socarrat Trail",
+            shrineImage: "./Images/maps/Ting-Lu Shrine.png",
+            legendaryType: "Dark / Ground",
+            weaknesses: ["Water", "Grass", "Ice", "Fighting", "Bug", "Fairy"],
+            stakeLocations: [
+                { location: "East Province (Area Three)", mapX: 74, mapY: 36 },
+                { location: "Tagtree Thicket", mapX: 66, mapY: 41 },
+                { location: "North Province (Area One)", mapX: 77, mapY: 29 },
+                { location: "North Province (Area Two)", mapX: 70, mapY: 22 },
+                { location: "North Province (Area Three)", mapX: 62, mapY: 11 },
+                { location: "Socarrat Trail", mapX: 80, mapY: 23 },
+                { location: "Casseroya Lake", mapX: 58, mapY: 23 },
+                { location: "East Province (Area Three)", mapX: 83, mapY: 41 }
+            ],
+            shrineMap: { mapX: 84, mapY: 31 }
+        },
+        {
+            prefix: "Chi-Yu",
+            accentColor: "#5da9ff",
+            stakeType: "Blue Stakes",
+            stakeImage: "./Images/maps/Chi-Yu Stake.png",
+            shrineName: "Firescourge Shrine",
+            shrineLocation: "South Province (Area Six)",
+            shrineImage: "./Images/maps/Chi-Yu Shrine.png",
+            legendaryType: "Dark / Fire",
+            weaknesses: ["Water", "Ground", "Rock", "Fighting"],
+            stakeLocations: [
+                { location: "East Province (Area One)", mapX: 75, mapY: 67 },
+                { location: "South Province (Area Five)", mapX: 61, mapY: 75 },
+                { location: "South Province (Area Six)", mapX: 73, mapY: 79 },
+                { location: "Alfornada Cavern Rim", mapX: 52, mapY: 67 },
+                { location: "East Province (Area Two)", mapX: 69, mapY: 58 },
+                { location: "East Province (Area Three)", mapX: 78, mapY: 48 },
+                { location: "South Province (Area Four)", mapX: 56, mapY: 64 },
+                { location: "South Province (Area Six)", mapX: 83, mapY: 72 }
+            ],
+            shrineMap: { mapX: 78, mapY: 74 }
+        }
+    ];
+
+    const objectives = [];
+    let nextId = 101;
+
+    chains.forEach(chain => {
+        chain.stakeLocations.forEach((point, index) => {
+            objectives.push({
+                id: nextId++,
+                name: `${chain.prefix} Stake ${index + 1}`,
+                category: "Stake",
+                type: chain.stakeType,
+                level: "N/A",
+                location: point.location,
+                leader: "Ruin Seal",
+                description: `Pull this ${chain.prefix} stake to weaken the shrine seal (${index + 1}/8).`,
+                mapX: point.mapX,
+                mapY: point.mapY,
+                accentColor: chain.accentColor,
+                weaknesses: [],
+                team: [],
+                image: chain.stakeImage
+            });
+        });
+
+        objectives.push({
+            id: nextId++,
+            name: `Legendary: ${chain.prefix}`,
+            category: "Legendary",
+            type: chain.legendaryType,
+            level: "60",
+            location: chain.shrineName,
+            leader: chain.prefix,
+            description: `Ruinous Legendary encounter tied to the ${chain.stakeType.toLowerCase()} chain.`,
+            mapX: chain.shrineMap.mapX,
+            mapY: chain.shrineMap.mapY,
+            accentColor: chain.accentColor,
+            weaknesses: chain.weaknesses,
+            team: [{ pokemon: chain.prefix, level: 60 }],
+            image: chain.shrineImage
+        });
+    });
+
+    const additionalLegendaries = [
+        { name: "Raikou", type: "Electric", weaknesses: ["Ground"], gameIndicator: "Scarlet Only" },
+        { name: "Entei", type: "Fire", weaknesses: ["Water", "Ground", "Rock"], gameIndicator: "Scarlet Only" },
+        { name: "Suicune", type: "Water", weaknesses: ["Electric", "Grass"], gameIndicator: "Scarlet Only" },
+        { name: "Ho-Oh", type: "Fire / Flying", weaknesses: ["Water", "Electric", "Rock (x4)"], gameIndicator: "Scarlet Only" },
+        { name: "Latios", type: "Dragon / Psychic", weaknesses: ["Ice", "Bug", "Ghost", "Dragon", "Dark", "Fairy"], gameIndicator: "Scarlet Only" },
+        { name: "Groudon", type: "Ground", weaknesses: ["Water", "Grass", "Ice"], gameIndicator: "Scarlet Only" },
+        { name: "Heatran", type: "Fire / Steel", weaknesses: ["Water", "Fighting", "Ground (x4)"], gameIndicator: "Scarlet Only" },
+        { name: "Solgaleo", type: "Psychic / Steel", weaknesses: ["Fire", "Ground", "Ghost", "Dark"], gameIndicator: "Scarlet Only" },
+        { name: "Glastrier", type: "Ice", weaknesses: ["Fire", "Fighting", "Rock", "Steel"], gameIndicator: "Scarlet Only" },
+
+        { name: "Lugia", type: "Psychic / Flying", weaknesses: ["Electric", "Ice", "Rock", "Ghost", "Dark"], gameIndicator: "Violet Only" },
+        { name: "Latias", type: "Dragon / Psychic", weaknesses: ["Ice", "Bug", "Ghost", "Dragon", "Dark", "Fairy"], gameIndicator: "Violet Only" },
+        { name: "Kyogre", type: "Water", weaknesses: ["Electric", "Grass"], gameIndicator: "Violet Only" },
+        { name: "Cobalion", type: "Steel / Fighting", weaknesses: ["Fire", "Fighting", "Ground"], gameIndicator: "Violet Only" },
+        { name: "Terrakion", type: "Rock / Fighting", weaknesses: ["Water", "Grass", "Fighting", "Ground", "Psychic", "Steel", "Fairy"], gameIndicator: "Violet Only" },
+        { name: "Virizion", type: "Grass / Fighting", weaknesses: ["Fire", "Ice", "Poison", "Flying (x4)", "Psychic", "Fairy"], gameIndicator: "Violet Only" },
+        { name: "Zekrom", type: "Dragon / Electric", weaknesses: ["Ground", "Ice", "Dragon", "Fairy"], gameIndicator: "Violet Only" },
+        { name: "Lunala", type: "Psychic / Ghost", weaknesses: ["Ghost", "Dark"], gameIndicator: "Violet Only" },
+        { name: "Spectrier", type: "Ghost", weaknesses: ["Ghost", "Dark"], gameIndicator: "Violet Only" },
+
+        { name: "Rayquaza", type: "Dragon / Flying", weaknesses: ["Ice (x4)", "Rock", "Dragon", "Fairy"] },
+        { name: "Kyurem", type: "Dragon / Ice", weaknesses: ["Fighting", "Rock", "Steel", "Dragon", "Fairy"] },
+        { name: "Necrozma", type: "Psychic", weaknesses: ["Bug", "Ghost", "Dark"] },
+
+        { name: "Gouging Fire", type: "Fire / Dragon", weaknesses: ["Ground", "Rock", "Dragon"], gameIndicator: "Scarlet Only" },
+        { name: "Raging Bolt", type: "Electric / Dragon", weaknesses: ["Ground", "Ice", "Dragon", "Fairy"], gameIndicator: "Scarlet Only" },
+        { name: "Iron Boulder", type: "Rock / Psychic", weaknesses: ["Water", "Grass", "Ground", "Bug", "Ghost", "Steel", "Dark"], gameIndicator: "Violet Only" },
+        { name: "Iron Crown", type: "Steel / Psychic", weaknesses: ["Fire", "Ground", "Ghost", "Dark"], gameIndicator: "Violet Only" },
+
+        { name: "Articuno", type: "Ice / Flying", weaknesses: ["Electric", "Fire", "Rock (x4)", "Steel" ] },
+        { name: "Zapdos", type: "Electric / Flying", weaknesses: ["Ice", "Rock"] },
+        { name: "Moltres", type: "Fire / Flying", weaknesses: ["Water", "Electric", "Rock (x4)"] },
+        { name: "Kubfu", type: "Fighting", weaknesses: ["Flying", "Psychic", "Fairy"] }
+    ];
+
+    additionalLegendaries.forEach((entry, index) => {
+        const legendaryId = 137 + index;
+        objectives.push({
+            id: legendaryId,
+            name: `Legendary: ${entry.name}`,
+            category: "Legendary",
+            type: entry.type,
+            level: "70",
+            location: "Paldea Region",
+            leader: entry.name,
+            description: `Legendary encounter for ${entry.name}.`,
+            gameIndicator: entry.gameIndicator || "",
+            weaknesses: entry.weaknesses,
+            team: [{ pokemon: entry.name, level: 70 }]
+        });
+    });
+
+    return objectives;
 }
 
 function isAdventureObjectiveCompleted(id) {
@@ -1850,7 +2283,7 @@ function syncAdventureVisibility(gameKey = currentGame) {
 
     const mapButton = document.querySelector('.main-nav .nav-item[data-page="map"]');
     if (mapButton) {
-        mapButton.classList.toggle("hidden", isScarletVioletGame(gameKey));
+        mapButton.classList.add("hidden");
     }
 }
 
@@ -3570,6 +4003,426 @@ function renderGuidePage(){
     `;
 }
 
+function getPaldeaMapFilterMeta() {
+    return [
+        { key: "gym", label: "Gyms", marker: "G", color: "#4ea1ff" },
+        { key: "titan", label: "Titans", marker: "T", color: "#ff9f43" },
+        { key: "team-star", label: "Team Star", marker: "S", color: "#a875ff" },
+        { key: "shrine", label: "Shrines", marker: "R", color: "#ff5d8f" },
+        { key: "stake", label: "Stakes", marker: "K", color: "#00c2b8" },
+        { key: "legendary", label: "Legendaries", marker: "L", color: "#ffd84a" }
+    ];
+}
+
+function loadPaldeaMapFilters() {
+    try {
+        const defaultFilters = new Set(getPaldeaMapFilterMeta().map(filter => filter.key));
+        const stored = localStorage.getItem(paldeaMapFilterStorageKey);
+        if (!stored) {
+            paldeaMapActiveFilters = defaultFilters;
+            return;
+        }
+
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed) || !parsed.length) {
+            paldeaMapActiveFilters = defaultFilters;
+            return;
+        }
+
+        const valid = new Set(parsed.filter(key => defaultFilters.has(key)));
+        paldeaMapActiveFilters = valid.size ? valid : defaultFilters;
+    } catch {
+        paldeaMapActiveFilters = new Set(getPaldeaMapFilterMeta().map(filter => filter.key));
+    }
+}
+
+function savePaldeaMapFilters() {
+    try {
+        localStorage.setItem(paldeaMapFilterStorageKey, JSON.stringify(Array.from(paldeaMapActiveFilters)));
+    } catch {
+        // Ignore storage write failures.
+    }
+}
+
+function getPaldeaSpecialMapPoints() {
+    return [
+        {
+            id: "stake-wo-chien",
+            name: "Wo-Chien Stakes",
+            subtitle: "8 Dark stakes across south-west Paldea",
+            categoryKey: "stake",
+            location: "South Province and West Province",
+            mapX: 20,
+            mapY: 66,
+            description: "Collect all eight dark stakes to unlock the Grasswither Shrine.",
+            notes: ["Open your map often to track routes.", "Each pulled stake weakens the shrine seal."],
+            image: "./Images/maps/Wo-Chien Stake.png"
+        },
+        {
+            id: "shrine-wo-chien",
+            name: "Grasswither Shrine",
+            subtitle: "Wo-Chien Ruin Shrine",
+            categoryKey: "shrine",
+            location: "South Province (Area One)",
+            mapX: 13,
+            mapY: 78,
+            description: "Unlock and challenge Wo-Chien after pulling all corresponding stakes.",
+            notes: ["Dark stake set required before this battle is available."],
+            image: "./Images/maps/Wo-Chien Shrine.png"
+        },
+        {
+            id: "legendary-wo-chien",
+            name: "Legendary: Wo-Chien",
+            subtitle: "Dark/Grass Legendary",
+            categoryKey: "legendary",
+            location: "Grasswither Shrine",
+            mapX: 13,
+            mapY: 78,
+            description: "Ruinous Legendary encounter unlocked from the dark stakes and shrine.",
+            notes: ["Bring strong Fire, Ice, Poison, Flying, or Bug coverage."]
+        },
+        {
+            id: "stake-chien-pao",
+            name: "Chien-Pao Stakes",
+            subtitle: "8 Yellow stakes across north-west Paldea",
+            categoryKey: "stake",
+            location: "West and North Paldea",
+            mapX: 35,
+            mapY: 19,
+            description: "Collect all yellow stakes to unlock the Icerend Shrine.",
+            notes: ["Use nearby fly points to route stake collection quickly."],
+            image: "./Images/maps/Chien-Pao Stake.png"
+        },
+        {
+            id: "shrine-chien-pao",
+            name: "Icerend Shrine",
+            subtitle: "Chien-Pao Ruin Shrine",
+            categoryKey: "shrine",
+            location: "West Province (Area One)",
+            mapX: 31,
+            mapY: 10,
+            description: "Unlock and challenge Chien-Pao after pulling all corresponding stakes.",
+            notes: ["Yellow stake set required before this battle is available."],
+            image: "./Images/maps/Chien-Pao Shrine.png"
+        },
+        {
+            id: "legendary-chien-pao",
+            name: "Legendary: Chien-Pao",
+            subtitle: "Dark/Ice Legendary",
+            categoryKey: "legendary",
+            location: "Icerend Shrine",
+            mapX: 31,
+            mapY: 10,
+            description: "Ruinous Legendary encounter unlocked from the yellow stakes and shrine.",
+            notes: ["Use Fighting, Bug, Rock, Steel, Fire, or Fairy pressure."]
+        },
+        {
+            id: "stake-ting-lu",
+            name: "Ting-Lu Stakes",
+            subtitle: "8 Green stakes across north-east Paldea",
+            categoryKey: "stake",
+            location: "East and North Paldea",
+            mapX: 76,
+            mapY: 24,
+            description: "Collect all green stakes to unlock the Groundblight Shrine.",
+            notes: ["Several stakes are near cliff edges and watch towers."],
+            image: "./Images/maps/Ting-Lu Stake.png"
+        },
+        {
+            id: "shrine-ting-lu",
+            name: "Groundblight Shrine",
+            subtitle: "Ting-Lu Ruin Shrine",
+            categoryKey: "shrine",
+            location: "Socarrat Trail",
+            mapX: 84,
+            mapY: 31,
+            description: "Unlock and challenge Ting-Lu after pulling all corresponding stakes.",
+            notes: ["Green stake set required before this battle is available."],
+            image: "./Images/maps/Ting-Lu Shrine.png"
+        },
+        {
+            id: "legendary-ting-lu",
+            name: "Legendary: Ting-Lu",
+            subtitle: "Dark/Ground Legendary",
+            categoryKey: "legendary",
+            location: "Groundblight Shrine",
+            mapX: 84,
+            mapY: 31,
+            description: "Ruinous Legendary encounter unlocked from the green stakes and shrine.",
+            notes: ["Bring Water, Grass, Ice, Fighting, Bug, or Fairy attackers."]
+        },
+        {
+            id: "stake-chi-yu",
+            name: "Chi-Yu Stakes",
+            subtitle: "8 Blue stakes across south-east Paldea",
+            categoryKey: "stake",
+            location: "East and South Paldea",
+            mapX: 69,
+            mapY: 74,
+            description: "Collect all blue stakes to unlock the Firescourge Shrine.",
+            notes: ["Blue stakes are spread across canyons and coastal ridges."],
+            image: "./Images/maps/Chi-Yu Stake.png"
+        },
+        {
+            id: "shrine-chi-yu",
+            name: "Firescourge Shrine",
+            subtitle: "Chi-Yu Ruin Shrine",
+            categoryKey: "shrine",
+            location: "South Province (Area Six)",
+            mapX: 78,
+            mapY: 74,
+            description: "Unlock and challenge Chi-Yu after pulling all corresponding stakes.",
+            notes: ["Blue stake set required before this battle is available."],
+            image: "./Images/maps/Chi-Yu Shrine.png"
+        },
+        {
+            id: "legendary-chi-yu",
+            name: "Legendary: Chi-Yu",
+            subtitle: "Dark/Fire Legendary",
+            categoryKey: "legendary",
+            location: "Firescourge Shrine",
+            mapX: 78,
+            mapY: 74,
+            description: "Ruinous Legendary encounter unlocked from the blue stakes and shrine.",
+            notes: ["Use Water, Ground, Rock, or Fighting coverage."]
+        }
+    ];
+}
+
+function getPaldeaStoryMapPoints() {
+    const categoryToFilter = {
+        Gym: "gym",
+        Titan: "titan",
+        "Team Star": "team-star"
+    };
+
+    return adventureGuide
+        .filter(objective => categoryToFilter[objective.category] && hasAdventureMapMarker(objective))
+        .map(objective => {
+            const marker = getAdventureMarkerPosition(objective);
+            const meta = getAdventureCategoryMeta(objective.category);
+            return {
+                id: `story-${objective.id}`,
+                name: objective.name,
+                subtitle: `${objective.type} ${objective.category}`,
+                categoryKey: categoryToFilter[objective.category],
+                location: objective.location || "Story location",
+                mapX: marker.xPercent,
+                mapY: marker.yPercent,
+                description: objective.description,
+                notes: [
+                    `${getAdventureRoleLabel(objective.category)}: ${objective.leader || "Various"}`,
+                    `Recommended level: ${objective.level}`
+                ],
+                color: meta.color
+            };
+        });
+}
+
+function getPaldeaMapPoints() {
+    return [...getPaldeaStoryMapPoints(), ...getPaldeaSpecialMapPoints()];
+}
+
+function ensurePaldeaMapSelection(visiblePoints) {
+    if (!visiblePoints.length) {
+        selectedPaldeaMapPointId = null;
+        return;
+    }
+
+    if (!visiblePoints.some(point => point.id === selectedPaldeaMapPointId)) {
+        selectedPaldeaMapPointId = visiblePoints[0].id;
+    }
+}
+
+function renderPaldeaMapPage() {
+    const filterMeta = getPaldeaMapFilterMeta();
+    const filterLookup = Object.fromEntries(filterMeta.map(filter => [filter.key, filter]));
+    const allPoints = getPaldeaMapPoints();
+    const visiblePoints = allPoints.filter(point => paldeaMapActiveFilters.has(point.categoryKey));
+    ensurePaldeaMapSelection(visiblePoints);
+    const selectedPoint = visiblePoints.find(point => point.id === selectedPaldeaMapPointId) || null;
+
+    const countByFilter = Object.fromEntries(filterMeta.map(filter => [filter.key, 0]));
+    allPoints.forEach(point => {
+        if (countByFilter[point.categoryKey] !== undefined) {
+            countByFilter[point.categoryKey] += 1;
+        }
+    });
+
+    const groups = filterMeta
+        .map(filter => ({
+            filter,
+            points: visiblePoints.filter(point => point.categoryKey === filter.key)
+        }))
+        .filter(group => group.points.length);
+
+    pageContent.innerHTML = `
+        <section class="map-page">
+            <div class="section-header planner-section-header">
+                <div>
+                    <h2>Paldea Exploration Map</h2>
+                    <p>Filter story routes, shrine chains, stakes, and legendary encounters.</p>
+                </div>
+                <div class="map-page-count">${visiblePoints.length} visible markers</div>
+            </div>
+
+            <div class="custom-map-toolbar">
+                <div class="custom-map-chip-row">
+                    ${filterMeta.map(filter => `
+                        <button
+                            type="button"
+                            class="custom-map-chip ${paldeaMapActiveFilters.has(filter.key) ? "active" : ""}"
+                            style="--chip-color:${filter.color}"
+                            data-map-filter="${filter.key}">
+                            <span class="custom-map-chip-key">${filter.marker}</span>
+                            <span>${filter.label}</span>
+                            <span class="custom-map-chip-count">${countByFilter[filter.key]}</span>
+                        </button>
+                    `).join("")}
+                </div>
+
+                <div class="custom-map-actions">
+                    <button type="button" class="custom-map-action" data-map-action="all">Show All</button>
+                    <button type="button" class="custom-map-action" data-map-action="none">Hide All</button>
+                    <button type="button" class="custom-map-action" data-map-action="story">Story Only</button>
+                </div>
+            </div>
+
+            <div class="custom-map-layout">
+                <aside class="custom-map-sidebar">
+                    <div class="custom-map-sidebar-header">
+                        <h3>Locations</h3>
+                        <p>Select a marker or list entry to inspect details.</p>
+                    </div>
+
+                    ${groups.length ? groups.map(group => `
+                        <section class="custom-map-group" style="--group-color:${group.filter.color}">
+                            <header class="custom-map-group-header">
+                                <span class="custom-map-group-pill">${group.filter.marker}</span>
+                                <div>
+                                    <h3>${group.filter.label}</h3>
+                                    <p>${group.points.length} locations</p>
+                                </div>
+                            </header>
+                            <div class="custom-map-group-list">
+                                ${group.points.map((point, index) => `
+                                    <button
+                                        type="button"
+                                        class="custom-map-entry ${selectedPoint?.id === point.id ? "selected" : ""}"
+                                        style="--entry-color:${point.color || group.filter.color}"
+                                        data-map-entry-id="${point.id}">
+                                        <div class="custom-map-entry-title-row">
+                                            <span class="custom-map-entry-title">${escapeHtml(point.name)}</span>
+                                            <span class="custom-map-entry-marker">${group.filter.marker}${index + 1}</span>
+                                        </div>
+                                        <div class="custom-map-entry-subtitle">${escapeHtml(point.subtitle)}</div>
+                                    </button>
+                                `).join("")}
+                            </div>
+                        </section>
+                    `).join("") : `<div class="custom-map-empty">No locations match the current filters.</div>`}
+                </aside>
+
+                <div class="custom-map-stage">
+                    <article class="custom-map-card">
+                        <div class="custom-map-canvas" id="paldeaMapCanvas">
+                            <img class="custom-map-image" src="./Images/maps/paldea-map.png" alt="Paldea map" loading="lazy" draggable="false">
+                            ${visiblePoints.map((point, index) => {
+                                const filter = filterLookup[point.categoryKey];
+                                return `
+                                    <button
+                                        type="button"
+                                        class="custom-map-marker ${selectedPoint?.id === point.id ? "selected" : ""}"
+                                        style="left:${point.mapX}%;top:${point.mapY}%;--marker-color:${point.color || filter.color}"
+                                        data-map-entry-id="${point.id}"
+                                        title="${escapeHtml(point.name)}">
+                                        <span class="custom-map-marker-core">${filter.marker}${index + 1}</span>
+                                    </button>
+                                `;
+                            }).join("")}
+                        </div>
+                    </article>
+
+                    ${selectedPoint ? `
+                        <article class="custom-map-detail-card" style="--detail-color:${selectedPoint.color || filterLookup[selectedPoint.categoryKey]?.color || "var(--accent)"}">
+                            <div class="custom-map-detail-header">
+                                <div>
+                                    <p class="custom-map-detail-eyebrow">${escapeHtml(filterLookup[selectedPoint.categoryKey]?.label || "Location")}</p>
+                                    <h3>${escapeHtml(selectedPoint.name)}</h3>
+                                </div>
+                                <span class="custom-map-detail-icon">${escapeHtml(filterLookup[selectedPoint.categoryKey]?.marker || "•")}</span>
+                            </div>
+                            <p class="custom-map-detail-description">${escapeHtml(selectedPoint.description || "")}</p>
+                            <div class="custom-map-detail-meta">
+                                <div class="custom-map-detail-row"><span>Location</span><strong>${escapeHtml(selectedPoint.location || "Paldea")}</strong></div>
+                                <div class="custom-map-detail-row"><span>Category</span><strong>${escapeHtml(filterLookup[selectedPoint.categoryKey]?.label || "Map")}</strong></div>
+                            </div>
+                            ${Array.isArray(selectedPoint.notes) && selectedPoint.notes.length ? `
+                                <section class="custom-map-detail-section">
+                                    <h4>Notes</h4>
+                                    <ul class="custom-map-detail-notes">
+                                        ${selectedPoint.notes.map(note => `<li>${escapeHtml(note)}</li>`).join("")}
+                                    </ul>
+                                </section>
+                            ` : ""}
+                        </article>
+                    ` : `
+                        <article class="custom-map-detail-card empty">
+                            <h3>No Location Selected</h3>
+                            <p>Turn on a filter and pick a marker to view details.</p>
+                        </article>
+                    `}
+                </div>
+            </div>
+        </section>
+    `;
+
+    document.querySelectorAll("[data-map-filter]").forEach(button => {
+        button.addEventListener("click", () => {
+            const filterKey = button.dataset.mapFilter;
+            if (!filterKey) return;
+
+            if (paldeaMapActiveFilters.has(filterKey)) {
+                paldeaMapActiveFilters.delete(filterKey);
+            } else {
+                paldeaMapActiveFilters.add(filterKey);
+            }
+
+            if (!paldeaMapActiveFilters.size) {
+                paldeaMapActiveFilters = new Set(filterMeta.map(filter => filter.key));
+            }
+
+            savePaldeaMapFilters();
+            renderMapPage();
+        });
+    });
+
+    document.querySelectorAll("[data-map-action]").forEach(button => {
+        button.addEventListener("click", () => {
+            const action = button.dataset.mapAction;
+            if (action === "all") {
+                paldeaMapActiveFilters = new Set(filterMeta.map(filter => filter.key));
+            } else if (action === "none") {
+                paldeaMapActiveFilters = new Set(["legendary"]);
+            } else if (action === "story") {
+                paldeaMapActiveFilters = new Set(["gym", "titan", "team-star"]);
+            }
+
+            savePaldeaMapFilters();
+            renderMapPage();
+        });
+    });
+
+    document.querySelectorAll("[data-map-entry-id]").forEach(button => {
+        button.addEventListener("click", () => {
+            const id = button.dataset.mapEntryId;
+            if (!id) return;
+            selectedPaldeaMapPointId = id;
+            renderMapPage();
+        });
+    });
+}
+
 function renderMapPage() {
     if (!pageContent) return;
 
@@ -3595,9 +4448,17 @@ function renderMapPage() {
         return;
     }
 
+    if (isScarletVioletGame()) {
+        if (!paldeaMapActiveFilters.size) {
+            loadPaldeaMapFilters();
+        }
+        renderPaldeaMapPage();
+        return;
+    }
+
     pageContent.innerHTML = `
         <section class="map-page">
-            <div class="loading">Map is currently available for Sword / Shield only.</div>
+            <div class="loading">Map is currently available for Scarlet / Violet and Sword / Shield only.</div>
         </section>
     `;
 }
@@ -3606,12 +4467,66 @@ function getAdventureCategoryMeta(category) {
     return objectiveCategoryMeta[category] || objectiveCategoryMeta.Gym;
 }
 
-function getAdventureObjectives() {
-    if (isSwordShieldGame()) {
+function getAdventureBaseObjectives(gameKey = currentGame) {
+    if (isSwordShieldGame(gameKey)) {
         return swordShieldAdventureGuide;
     }
 
-    return adventureGuide.filter(objective => adventureDisplayCategories.has(objective.category));
+    const base = adventureGuide.filter(objective => adventureDisplayCategories.has(objective.category));
+    if (!isScarletVioletGame(gameKey)) {
+        return base;
+    }
+
+    const supplemental = getAdventureSupplementalObjectives().filter(objective => String(objective?.name || "") !== "Legendary: Heatran");
+    return [...base, ...supplemental];
+}
+
+function getAdventureAvailableCategories(gameKey = currentGame) {
+    const categories = new Set(getAdventureBaseObjectives(gameKey).map(objective => objective.category));
+    return Object.keys(objectiveCategoryMeta).filter(category => categories.has(category));
+}
+
+function getAdventureActiveCategorySet(gameKey = currentGame) {
+    const availableCategories = getAdventureAvailableCategories(gameKey);
+    const availableSet = new Set(availableCategories);
+    const stored = Array.isArray(adventureCategoryFiltersByGame?.[gameKey])
+        ? adventureCategoryFiltersByGame[gameKey]
+        : availableCategories;
+    const valid = stored.filter(category => availableSet.has(category));
+    const fallback = valid.length ? valid : availableCategories;
+
+    adventureCategoryFiltersByGame = {
+        ...adventureCategoryFiltersByGame,
+        [gameKey]: fallback
+    };
+
+    return new Set(fallback);
+}
+
+function toggleAdventureCategoryFilter(category, gameKey = currentGame) {
+    const active = getAdventureActiveCategorySet(gameKey);
+    const available = getAdventureAvailableCategories(gameKey);
+
+    if (active.has(category)) {
+        active.delete(category);
+    } else {
+        active.add(category);
+    }
+
+    if (!active.size) {
+        available.forEach(entry => active.add(entry));
+    }
+
+    adventureCategoryFiltersByGame = {
+        ...adventureCategoryFiltersByGame,
+        [gameKey]: available.filter(entry => active.has(entry))
+    };
+    saveAdventureCategoryFilters();
+}
+
+function getAdventureObjectives() {
+    const activeCategories = getAdventureActiveCategorySet(currentGame);
+    return getAdventureBaseObjectives(currentGame).filter(objective => activeCategories.has(objective.category));
 }
 
 function getAdventureVisibleObjectives() {
@@ -3628,13 +4543,14 @@ function ensureAdventureSelectionVisible() {
     }
 
     if (!objectives.some(objective => objective.id === selectedAdventureObjectiveId)) {
-        selectedAdventureObjectiveId = objectives[0].id;
+        selectedAdventureObjectiveId = null;
     }
 }
 
 function getAdventureObjectiveById(id) {
     const objectives = getAdventureVisibleObjectives();
     if (!objectives.length) return null;
+    if (id == null) return null;
     return objectives.find(objective => objective.id === id) || objectives[0];
 }
 
@@ -3646,11 +4562,184 @@ function getAdventureRoleLabel(category) {
     return "Boss";
 }
 
+function getObjectivePrimaryTypeKey(objective) {
+    const rawType = String(objective?.type || "").trim().toLowerCase();
+    if (!rawType) return "";
+
+    const segments = rawType.split("/").map(part => part.trim()).filter(Boolean);
+    const first = segments[0] || rawType;
+    return first.split(/\s+/)[0] || "";
+}
+
+function getObjectiveAccentColor(objective, fallbackColor) {
+    if (objective?.accentColor) {
+        return objective.accentColor;
+    }
+
+    if (objective?.category === "Team Star") {
+        const typeKey = getObjectivePrimaryTypeKey(objective);
+        return typeColorMap[typeKey] || fallbackColor;
+    }
+    return fallbackColor;
+}
+
+function getObjectiveIconSources(objective) {
+    if (!objective) return "";
+    const objectiveName = String(objective.name || "");
+    if (objective.category === "Team Star") return ["./Images/maps/Team_Star.webp"];
+    if (/elite four/i.test(objectiveName)) return ["./Images/Elite Four.png"];
+    if (/academy ace/i.test(objectiveName)) return ["./Images/adventure academy.png"];
+    if (Array.isArray(objective.iconImages) && objective.iconImages.length) {
+        return objective.iconImages.filter(src => typeof src === "string" && src.trim());
+    }
+    if (objective.image) {
+        return [objective.image];
+    }
+    return [];
+}
+
+function renderObjectiveImageIconMarkup(objective) {
+    const iconSources = getObjectiveIconSources(objective);
+    if (!iconSources.length) return "";
+
+    if (iconSources.length === 1) {
+        return `<img class="adventure-objective-image-icon" src="${iconSources[0]}" alt="${escapeHtml(objective.category)} icon">`;
+    }
+
+    return `
+        <span class="adventure-objective-image-icon-pair">
+            <img class="adventure-objective-image-icon" src="${iconSources[0]}" alt="${escapeHtml(objective.category)} icon 1">
+            <img class="adventure-objective-image-icon" src="${iconSources[1]}" alt="${escapeHtml(objective.category)} icon 2">
+        </span>
+    `;
+}
+
+function renderAdventureCategoryIcon(objective, meta) {
+    const iconMarkup = renderObjectiveImageIconMarkup(objective);
+    if (iconMarkup) {
+        const iconColor = getObjectiveAccentColor(objective, meta.color);
+        return `
+            <span class="adventure-category-icon icon-image" style="--category-icon-color:${iconColor}">
+                ${iconMarkup}
+            </span>
+        `;
+    }
+
+    return `<span class="adventure-category-icon">${meta.icon}</span>`;
+}
+
+function getAdventureLegendarySpriteUrl(objective) {
+    const rawName = objective?.team?.[0]?.pokemon
+        || objective?.leader
+        || String(objective?.name || "").replace(/^Legendary:\s*/i, "");
+    const firstChoice = String(rawName)
+        .split("/")[0]
+        .replace(/\s*\([^)]*\)/g, "")
+        .trim();
+    const slug = firstChoice
+        .toLowerCase()
+        .replace(/[.'’]/g, "")
+        .replace(/\s+/g, "-");
+
+    return `https://img.pokemondb.net/sprites/home/normal/${encodeURIComponent(slug)}.png`;
+}
+
+function getAdventureStakeImageUrl(objective) {
+    const iconSources = getObjectiveIconSources(objective);
+    return iconSources[0] || "";
+}
+
+function getAdventureMarkerIconReference(objective) {
+    if (!objective) return "Unknown";
+
+    if (objective.category === "Legendary") {
+        return String(objective?.team?.[0]?.pokemon || objective?.leader || objective?.name || "Legendary").replace(/^Legendary:\s*/i, "").trim();
+    }
+
+    if (objective.category === "Stake") {
+        return String(objective?.name || "Stake").trim();
+    }
+
+    const iconSources = getObjectiveIconSources(objective);
+    if (iconSources.length) {
+        const source = String(iconSources[0]);
+        const filename = source.split("/").pop() || source;
+        return filename.replace(/\.[^.]+$/, "");
+    }
+
+    return String(objective?.type || objective?.category || "Unknown");
+}
+
+function buildAdventureMarkerLayoutExport(gameKey = currentGame) {
+    return getAdventureBaseObjectives(gameKey)
+        .filter(objective => hasAdventureMapMarker(objective) && objective.category !== "Shrine")
+        .map(objective => {
+            const markerPosition = getAdventureMarkerPosition(objective);
+            const objectiveId = Number(objective.id);
+            const permanent = adventurePermanentMarkerPositionsById[objectiveId] || null;
+            const override = getAdventureMarkerOverride(objective.id, gameKey);
+
+            return {
+                objectiveId: objective.id,
+                objectiveName: objective.name,
+                category: objective.category,
+                iconName: getAdventureMarkerIconReference(objective),
+                gameIndicator: objective.gameIndicator || "",
+                xPercent: Number(markerPosition.xPercent.toFixed(2)),
+                yPercent: Number(markerPosition.yPercent.toFixed(2)),
+                source: override ? "override" : (permanent ? "permanent" : "fallback")
+            };
+        })
+        .sort((a, b) => Number(a.objectiveId) - Number(b.objectiveId));
+}
+
+function buildAdventureMarkerLayoutReferenceExport(gameKey = currentGame) {
+    const entries = buildAdventureMarkerLayoutExport(gameKey);
+
+    const lines = [
+        "{"
+    ];
+
+    entries.forEach(entry => {
+        lines.push(`  // ${entry.objectiveId} | ${entry.objectiveName} | ${entry.category} | icon: ${entry.iconName}`);
+        lines.push(`  ${entry.objectiveId}: { xPercent: ${entry.xPercent}, yPercent: ${entry.yPercent} },`);
+    });
+
+    lines.push("}");
+    return lines.join("\n");
+}
+
 function hasAdventureMapMarker(objective) {
     if (!objective) return false;
     const objectiveId = Number(objective.id);
+    if (adventurePermanentMarkerPositionsById[objectiveId]) return true;
+    if (getAdventureFallbackMarkerPosition(objective)) return true;
     if (adventureMapGenieCoordsById[objectiveId]) return true;
     return Number.isFinite(Number(objective.mapX)) && Number.isFinite(Number(objective.mapY));
+}
+
+function getAdventureFallbackMarkerPosition(objective) {
+    if (!objective) return null;
+
+    const objectiveName = String(objective.name || "");
+    const objectiveCategory = String(objective.category || "");
+
+    if (objectiveCategory === "Post-Game" && objectiveName.startsWith("Gym Rematch:")) {
+        const anchorGym = adventureGuide.find(entry => entry.category === "Gym" && entry.leader === objective.leader);
+        if (anchorGym && Number(anchorGym.id) !== Number(objective.id)) {
+            return getAdventureMarkerPosition(anchorGym);
+        }
+    }
+
+    if (objectiveCategory === "Post-Game" && /Academy Ace/i.test(objectiveName)) {
+        const academyAnchor = adventureGuide.find(entry => Number(entry.id) === 18.2)
+            || adventureGuide.find(entry => Number(entry.id) === 18.1);
+        if (academyAnchor) {
+            return getAdventureMarkerPosition(academyAnchor);
+        }
+    }
+
+    return null;
 }
 
 function getAdventureMarkerPosition(objective) {
@@ -3658,7 +4747,24 @@ function getAdventureMarkerPosition(objective) {
         return { xPercent: 50, yPercent: 50 };
     }
 
+    const override = getAdventureMarkerOverride(objective?.id);
+    if (override) {
+        return override;
+    }
+
     const objectiveId = Number(objective?.id);
+    const permanent = adventurePermanentMarkerPositionsById[objectiveId];
+    if (permanent && Number.isFinite(Number(permanent.xPercent)) && Number.isFinite(Number(permanent.yPercent))) {
+        return {
+            xPercent: Math.max(0, Math.min(100, Number(permanent.xPercent))),
+            yPercent: Math.max(0, Math.min(100, Number(permanent.yPercent)))
+        };
+    }
+
+    const fallback = getAdventureFallbackMarkerPosition(objective);
+    if (fallback) {
+        return fallback;
+    }
     const geo = adventureMapGenieCoordsById[objectiveId];
     const offset = adventureMapGenieOffsetById[objectiveId] || { x: 0, y: 0 };
     const mapX = geo
@@ -3701,48 +4807,71 @@ function sizeAdventureMapInner() {
 }
 
 function setAdventureMapZoom(nextZoomLevel, options = {}) {
-    const viewport = el("adventureMapViewport");
-    const inner = el("adventureMapInner");
-    if (!viewport || !inner) return;
+    if (!adventureLeafletMap) return;
 
-    const clampedZoom = Math.max(adventureMapZoomMin, Math.min(adventureMapZoomMax, nextZoomLevel));
-    if (Math.abs(clampedZoom - adventureMapZoomLevel) < 0.001) return;
+    const minZoom = adventureLeafletMap.getMinZoom();
+    const maxZoom = adventureLeafletMap.getMaxZoom();
+    const clampedZoom = Math.max(minZoom, Math.min(maxZoom, nextZoomLevel));
+    if (Math.abs(clampedZoom - adventureLeafletMap.getZoom()) < 0.001) return;
 
-    const currentState = adventureMapPositionState || applyAdventureMapTransform(0, 0);
-    if (!currentState) return;
-
-    const anchorX = Number.isFinite(options.anchorX) ? options.anchorX : viewport.clientWidth / 2;
-    const anchorY = Number.isFinite(options.anchorY) ? options.anchorY : viewport.clientHeight / 2;
-    const worldX = (anchorX - currentState.translateX) / currentState.innerWidth;
-    const worldY = (anchorY - currentState.translateY) / currentState.innerHeight;
-
-    adventureMapZoomLevel = clampedZoom;
-    const resized = sizeAdventureMapInner();
-    if (!resized) return;
-
-    const nextX = anchorX - (worldX * resized.innerWidth);
-    const nextY = anchorY - (worldY * resized.innerHeight);
-    const nextState = applyAdventureMapTransform(nextX, nextY, { clamp: true });
-
-    const zoomValueEl = el("adventureMapZoomValue");
-    if (zoomValueEl) {
-        zoomValueEl.textContent = `${Math.round(adventureMapZoomLevel * 100)}%`;
+    if (Number.isFinite(options.anchorX) && Number.isFinite(options.anchorY)) {
+        const point = L.point(options.anchorX, options.anchorY);
+        const latLng = adventureLeafletMap.containerPointToLatLng(point);
+        adventureLeafletMap.setZoomAround(latLng, clampedZoom, { animate: false });
+    } else {
+        adventureLeafletMap.setZoom(clampedZoom, { animate: false });
     }
 
-    const selectedObjective = selectedAdventureObjectiveId ? getAdventureObjectiveById(selectedAdventureObjectiveId) : null;
-    renderAdventureMapPopout(selectedObjective, nextState);
+    adventureMapZoomLevel = clampedZoom;
+    updateAdventureZoomUi();
 }
 
 function updateAdventureZoomUi() {
+    if (adventureLeafletMap) {
+        const currentZoom = adventureLeafletMap.getZoom();
+        const minZoom = adventureLeafletMap.getMinZoom();
+        const maxZoom = adventureLeafletMap.getMaxZoom();
+        const zoomValueEl = el("adventureMapZoomValue");
+        if (zoomValueEl) {
+            const baselineZoom = Number.isFinite(adventureLeafletDefaultZoom)
+                ? adventureLeafletDefaultZoom
+                : minZoom;
+            const relativeToDefault = Math.pow(2, currentZoom - baselineZoom);
+            const displayPercent = Math.round((relativeToDefault - 1) * 100);
+            zoomValueEl.textContent = `${displayPercent}%`;
+        }
+
+        const zoomInBtn = el("adventureZoomIn");
+        const zoomOutBtn = el("adventureZoomOut");
+        if (zoomInBtn) zoomInBtn.disabled = currentZoom >= maxZoom;
+        if (zoomOutBtn) zoomOutBtn.disabled = currentZoom <= minZoom;
+        updateAdventureZoneLabelVisibility(currentZoom);
+        return;
+    }
+
     const zoomValueEl = el("adventureMapZoomValue");
     if (zoomValueEl) {
-        zoomValueEl.textContent = `${Math.round(adventureMapZoomLevel * 100)}%`;
+        const relativeToDefault = adventureMapZoomLevel / 2;
+        const displayPercent = Math.round((relativeToDefault - 1) * 100);
+        zoomValueEl.textContent = `${displayPercent}%`;
     }
 
     const zoomInBtn = el("adventureZoomIn");
     const zoomOutBtn = el("adventureZoomOut");
     if (zoomInBtn) zoomInBtn.disabled = adventureMapZoomLevel >= adventureMapZoomMax;
     if (zoomOutBtn) zoomOutBtn.disabled = adventureMapZoomLevel <= adventureMapZoomMin;
+}
+
+function updateAdventureZoneLabelVisibility(currentZoom = null) {
+    const viewport = el("adventureMapViewport");
+    if (!viewport || !adventureLeafletMap) return;
+
+    const zoom = Number.isFinite(currentZoom) ? currentZoom : adventureLeafletMap.getZoom();
+    const baselineZoom = Number.isFinite(adventureLeafletDefaultZoom)
+        ? adventureLeafletDefaultZoom
+        : adventureLeafletMap.getMinZoom();
+
+    viewport.classList.toggle("zone-labels-hidden", zoom > baselineZoom + 0.01);
 }
 
 function syncAdventureMapAspectRatio() {
@@ -3771,18 +4900,22 @@ function renderAdventureList() {
 
     listEl.innerHTML = objectives.map(objective => {
         const meta = getAdventureCategoryMeta(objective.category);
+        const accentColor = getObjectiveAccentColor(objective, meta.color);
         const isSelected = objective.id === selectedAdventureObjectiveId;
         const isCompleted = isAdventureObjectiveCompleted(objective.id);
         return `
             <article
                 class="adventure-objective-card ${isSelected ? "selected" : ""} ${isCompleted ? "completed" : ""}"
                 data-objective-id="${objective.id}"
-                style="--objective-accent:${meta.color}">
+                style="--objective-accent:${accentColor}">
                 <div class="adventure-objective-content">
                     <div class="adventure-objective-name">${escapeHtml(objective.name)}</div>
                     <div class="adventure-objective-subline">
-                        <span class="adventure-category-icon">${meta.icon}</span>
+                        ${renderAdventureCategoryIcon(objective, meta)}
                         <span>${escapeHtml(objective.type)} ${escapeHtml(meta.shortLabel)}</span>
+                        ${objective.gameIndicator
+                            ? `<span class="adventure-game-indicator-chip">${escapeHtml(objective.gameIndicator)}</span>`
+                            : ""}
                     </div>
                     <div class="adventure-objective-level">Lv.${escapeHtml(objective.level)}</div>
                 </div>
@@ -3862,93 +4995,188 @@ function centerAdventureObjective(objective) {
     if (!objective) return;
 
     if (!hasAdventureMapMarker(objective)) {
-        renderAdventureMapPopout(objective, null);
+        renderAdventureMapPopout(objective);
+        return;
+    }
+
+    if (adventureLeafletMap) {
+        const markerPosition = getAdventureMarkerPosition(objective);
+        adventureLeafletMap.setView([markerPosition.yPercent, markerPosition.xPercent], adventureLeafletMap.getZoom(), { animate: true });
+        renderAdventureMapPopout(objective);
         return;
     }
 
     const centeredState = panAdventureMapTo(objective);
-    renderAdventureMapPopout(objective, centeredState);
+    renderAdventureMapPopout(objective);
 }
 
 function renderAdventureMap() {
-    const mapInner = el("adventureMapInner");
-    if (!mapInner) return;
-
+    const viewport = el("adventureMapViewport");
+    if (!viewport) return;
     const objectives = getAdventureVisibleObjectives();
 
-    sizeAdventureMapInner();
-
-    mapInner.innerHTML = `
-        <img class="adventure-map-base" src="./Images/adventure/paldea.png" alt="Paldea map" loading="lazy" draggable="false" onerror="this.onerror=null;this.src='./Images/maps/paldea-map.png'">
-        <div class="adventure-map-watermark">PALDEA</div>
-        ${objectives.filter(hasAdventureMapMarker).map(objective => {
-            const meta = getAdventureCategoryMeta(objective.category);
-            const isSelected = objective.id === selectedAdventureObjectiveId;
-            const isCompleted = isAdventureObjectiveCompleted(objective.id);
-            const markerPosition = getAdventureMarkerPosition(objective);
-            const typeIconUrl = getTypeIconUrl(objective.type);
-            return `
-                <button
-                    type="button"
-                    class="adventure-marker ${isSelected ? "selected" : ""} ${isCompleted ? "completed" : ""}"
-                    data-objective-id="${objective.id}"
-                    style="left:${markerPosition.xPercent}%;top:${markerPosition.yPercent}%;--marker-color:${meta.color}"
-                    title="${escapeHtml(objective.name)}">
-                    <span class="adventure-marker-dot">
-                        <img class="adventure-marker-icon" src="${typeIconUrl}" alt="${escapeHtml(objective.type)} type icon">
-                    </span>
-                </button>
-            `;
-        }).join("")}
-    `;
-
-    const mapImage = mapInner.querySelector(".adventure-map-base");
-    if (mapImage) {
-        const applyImageSizing = () => {
-            if (!syncAdventureMapAspectRatio()) return;
-            sizeAdventureMapInner();
-            if (selectedAdventureObjectiveId) {
-                const selectedObjective = getAdventureObjectiveById(selectedAdventureObjectiveId);
-                centerAdventureObjective(selectedObjective);
-            }
-        };
-
-        if (mapImage.complete) {
-            applyImageSizing();
-        } else {
-            mapImage.addEventListener("load", applyImageSizing, { once: true });
-        }
+    if (adventureLeafletMap && adventureLeafletMap.getContainer() !== viewport) {
+        adventureLeafletMap.remove();
+        adventureLeafletMap = null;
+        adventureLeafletMarkerLayer = null;
     }
 
+    if (!adventureLeafletMap) {
+        adventureLeafletMap = L.map(viewport, {
+            crs: L.CRS.Simple,
+            zoomControl: false,
+            minZoom: -4,
+            maxZoom: 8,
+            zoomSnap: 0.25,
+            zoomDelta: 0.5,
+            dragging: true,
+            scrollWheelZoom: true,
+            touchZoom: true,
+            doubleClickZoom: true,
+            keyboard: true,
+            inertia: true,
+            attributionControl: false
+        });
+
+        const bounds = [[0, 0], [100, 100]];
+        L.imageOverlay("./Images/map.jpeg", bounds).addTo(adventureLeafletMap);
+        adventureLeafletMap.fitBounds(bounds, { padding: [0, 0], animate: false });
+
+        const fitZoom = adventureLeafletMap.getZoom();
+        adventureLeafletFitZoom = fitZoom;
+        const minZoom = fitZoom + 1;
+        const maxZoom = fitZoom + 5;
+        adventureLeafletMap.setMinZoom(minZoom);
+        adventureLeafletMap.setMaxZoom(maxZoom);
+        adventureLeafletMap.setZoom(minZoom);
+        adventureLeafletDefaultZoom = minZoom;
+        adventureMapZoomLevel = minZoom;
+        adventureLeafletMap.setMaxBounds(bounds);
+        adventureLeafletMap.options.maxBoundsViscosity = 1;
+
+        adventureLeafletMap.on("click", () => {
+            if (adventureSuppressMarkerClick) return;
+            updateAdventureSelection(null);
+        });
+
+        adventureLeafletMap.on("zoomend", () => {
+            adventureMapZoomLevel = adventureLeafletMap.getZoom();
+            updateAdventureZoomUi();
+        });
+    }
+
+    if (adventureLeafletMarkerLayer) {
+        adventureLeafletMarkerLayer.remove();
+    }
+    adventureLeafletMarkerLayer = L.layerGroup().addTo(adventureLeafletMap);
+
+    if (adventureLeafletZoneLabelLayer) {
+        adventureLeafletZoneLabelLayer.remove();
+    }
+    adventureLeafletZoneLabelLayer = L.layerGroup().addTo(adventureLeafletMap);
+
+    adventureMapZoneLabels.forEach(zone => {
+        const labelText = Array.isArray(zone.labelLines) && zone.labelLines.length
+            ? zone.labelLines.map(line => escapeHtml(String(line))).join("<br>")
+            : escapeHtml(zone.name);
+        L.marker([zone.yPercent, zone.xPercent], {
+            icon: L.divIcon({
+                html: `<span class="adventure-zone-label ${zone.kind === "crater" ? "crater" : "province"}">${labelText}</span>`,
+                className: "adventure-zone-label-wrap",
+                iconSize: [0, 0],
+                iconAnchor: [0, 0]
+            }),
+            interactive: false,
+            keyboard: false
+        }).addTo(adventureLeafletZoneLabelLayer);
+    });
+
+    adventureLeafletMap.dragging?.enable();
+    adventureLeafletMap.scrollWheelZoom?.enable();
+    adventureLeafletMap.touchZoom?.enable();
+    adventureLeafletMap.doubleClickZoom?.enable();
+
+    objectives.filter(objective => hasAdventureMapMarker(objective) && objective.category !== "Shrine").forEach(objective => {
+        const meta = getAdventureCategoryMeta(objective.category);
+        const markerColor = getObjectiveAccentColor(objective, meta.color);
+        const isSelected = objective.id === selectedAdventureObjectiveId;
+        const isCompleted = isAdventureObjectiveCompleted(objective.id);
+        const markerPosition = getAdventureMarkerPosition(objective);
+        const imageIconMarkup = renderObjectiveImageIconMarkup(objective);
+        const typeIconUrl = getTypeIconUrl(objective.type);
+        const isLegendary = objective?.category === "Legendary";
+        const isStake = objective?.category === "Stake";
+        const iconMarkup = isLegendary
+            ? `<img class="adventure-legendary-marker-image" src="${getAdventureLegendarySpriteUrl(objective)}" alt="${escapeHtml(objective.name)} artwork" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${typeIconUrl}'">`
+            : (isStake
+                ? `<img class="adventure-stake-marker-image" src="${getAdventureStakeImageUrl(objective)}" alt="${escapeHtml(objective.name)} icon" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${typeIconUrl}'">`
+                : (imageIconMarkup
+                    ? imageIconMarkup
+                    : `<img class="adventure-marker-icon" src="${typeIconUrl}" alt="${escapeHtml(objective.type)} type icon">`));
+
+        const marker = L.marker([markerPosition.yPercent, markerPosition.xPercent], {
+            icon: L.divIcon({
+                html: `
+                    <span class="adventure-marker ${isLegendary ? "legendary-image" : ""} ${isStake ? "stake-image" : ""} ${isSelected ? "selected" : ""} ${isCompleted ? "completed" : ""}" data-objective-id="${objective.id}" style="--marker-color:${markerColor}">
+                        <span class="adventure-marker-dot">${iconMarkup}</span>
+                    </span>
+                `,
+                className: "adventure-leaflet-marker-wrap",
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            }),
+            draggable: false
+        });
+
+        marker.on("click", () => {
+            if (adventureSuppressMarkerClick) return;
+            updateAdventureSelection(Number(objective.id));
+        });
+
+        marker.addTo(adventureLeafletMarkerLayer);
+    });
+
+    adventureLeafletMap.invalidateSize({ pan: false, animate: false });
+    updateAdventureZoneLabelVisibility();
+
     if (!selectedAdventureObjectiveId) {
-        renderAdventureMapPopout(null, null);
+        renderAdventureMapPopout(null);
         return;
     }
 
     const selectedObjective = getAdventureObjectiveById(selectedAdventureObjectiveId);
     centerAdventureObjective(selectedObjective);
+    updateAdventureZoomUi();
 }
 
-function renderAdventureMapPopout(objective, mapState) {
+function renderAdventureMapPopout(objective) {
+    const detailRoot = !isSwordShieldGame() ? el("adventureStaticDetail") : null;
     const overlay = el("adventureMapOverlay");
-    const viewport = el("adventureMapViewport");
-    if (!overlay || !viewport) return;
+    const targetRoot = detailRoot || overlay;
+    if (!targetRoot) return;
+
+    const clearDetail = () => {
+        delete targetRoot.dataset.objectiveId;
+        delete targetRoot.dataset.mode;
+        if (detailRoot) {
+            targetRoot.innerHTML = '<div class="adventure-list-empty">Select an objective to view details.</div>';
+        } else {
+            targetRoot.innerHTML = "";
+        }
+    };
 
     if (!objective) {
-        delete overlay.dataset.objectiveId;
-        delete overlay.dataset.mode;
-        overlay.innerHTML = "";
+        clearDetail();
         return;
     }
 
     const meta = getAdventureCategoryMeta(objective.category);
-    const hasMarker = hasAdventureMapMarker(objective);
-    const isEliteFourPlus = isEliteFourAndBeyondObjective(objective);
     const isChampion = isChampionObjective(objective);
     const hasAcademyTournament = hasAcademyTournamentData(objective);
+    const hasLeagueCircuit = isLeagueCircuitObjective(objective);
     const starterMatchup = getAdventureStarterMatchup(objective);
     const weakAgainstTypes = starterMatchup?.weaknesses?.length ? starterMatchup.weaknesses : objective.weaknesses;
-    const teamSection = isEliteFourPlus && !hasAcademyTournament
+    const teamSection = !hasAcademyTournament && !hasLeagueCircuit && Array.isArray(objective.team) && objective.team.length
         ? `
             <div class="adventure-marker-popout-weaknesses">
                 <h4>Battle Team (hover for weaknesses)</h4>
@@ -3958,8 +5186,10 @@ function renderAdventureMapPopout(objective, mapState) {
         : "";
     const tournamentSection = hasAcademyTournament
         ? renderAcademyTournamentSection(objective)
-        : "";
-    const starterSection = Array.isArray(objective.starterOptions) && objective.starterOptions.length
+        : (hasLeagueCircuit
+            ? renderLeagueCircuitSection(objective)
+            : "");
+    const starterSection = !hasLeagueCircuit && Array.isArray(objective.starterOptions) && objective.starterOptions.length
         ? `
             <div class="adventure-marker-popout-weaknesses">
                 <h4>Starter Options (hover for weaknesses)</h4>
@@ -3967,61 +5197,30 @@ function renderAdventureMapPopout(objective, mapState) {
             </div>
         `
         : "";
-    const modalMetaSection = isEliteFourPlus
-        ? ""
-        : `
-            <div class="adventure-map-modal-meta">
-                <div class="adventure-marker-popout-row"><span>Location</span><strong>${escapeHtml(objective.location || "Story location")}</strong></div>
-                <div class="adventure-marker-popout-row"><span>${escapeHtml(getAdventureRoleLabel(objective.category))}</span><strong>${escapeHtml(objective.leader || "Various")}</strong></div>
-            </div>
-        `;
-    const weakAgainstSection = (isChampion || hasAcademyTournament)
+    const weakAgainstSection = (isChampion || hasAcademyTournament || hasLeagueCircuit)
         ? ""
         : `
             <div class="adventure-marker-popout-weaknesses">
                 <h4>Weak Against</h4>
                 <div class="adventure-type-badge-row">${renderAdventureTypeBadges(weakAgainstTypes)}</div>
             </div>
-        `;
+        `
+        ;
 
-    if (!hasMarker) {
-        if (overlay.dataset.mode !== "modal" || Number(overlay.dataset.objectiveId) !== Number(objective.id)) {
-            overlay.dataset.mode = "modal";
-            overlay.dataset.objectiveId = String(objective.id);
-            overlay.innerHTML = `
-                <article class="adventure-map-modal" style="--objective-accent:${meta.color}">
-                    <button class="adventure-popout-close" type="button" aria-label="Close adventure details">×</button>
-                    <h3 class="adventure-map-modal-title">${escapeHtml(objective.name)}</h3>
-                    <div class="adventure-marker-popout-badges">
-                        <span class="badge-tag">${escapeHtml(objective.category)}</span>
-                        <span class="badge-tag">${escapeHtml(objective.type)}</span>
-                        <span class="badge-tag">Lv.${escapeHtml(objective.level)}</span>
-                    </div>
-                    <p class="adventure-map-modal-description">${escapeHtml(objective.description)}</p>
-                    ${modalMetaSection}
-                    ${teamSection}
-                    ${starterSection}
-                    ${tournamentSection}
-                    ${weakAgainstSection}
-                </article>
-            `;
-            bindAcademyTournamentSection(objective);
-        }
-        return;
-    }
-
-    if (Number(overlay.dataset.objectiveId) !== Number(objective.id)) {
-        overlay.dataset.mode = "popout";
-        overlay.dataset.objectiveId = String(objective.id);
-        overlay.innerHTML = `
-            <article class="adventure-marker-popout" style="--objective-accent:${meta.color}">
+    if (targetRoot.dataset.mode !== "modal" || Number(targetRoot.dataset.objectiveId) !== Number(objective.id)) {
+        targetRoot.dataset.mode = "modal";
+        targetRoot.dataset.objectiveId = String(objective.id);
+        targetRoot.innerHTML = `
+            <article class="adventure-map-modal ${detailRoot ? "adventure-static-modal" : ""}" style="--objective-accent:${meta.color}">
                 <button class="adventure-popout-close" type="button" aria-label="Close adventure details">×</button>
-                <h3 class="adventure-marker-popout-title">${escapeHtml(objective.name)}</h3>
+                <h3 class="adventure-map-modal-title">${escapeHtml(objective.name)}</h3>
                 <div class="adventure-marker-popout-badges">
                     <span class="badge-tag">${escapeHtml(objective.category)}</span>
                     <span class="badge-tag">${escapeHtml(objective.type)}</span>
                     <span class="badge-tag">Lv.${escapeHtml(objective.level)}</span>
+                    ${objective.gameIndicator ? `<span class="badge-tag">${escapeHtml(objective.gameIndicator)}</span>` : ""}
                 </div>
+                <p class="adventure-map-modal-description">${escapeHtml(objective.description)}</p>
                 ${teamSection}
                 ${starterSection}
                 ${tournamentSection}
@@ -4029,41 +5228,8 @@ function renderAdventureMapPopout(objective, mapState) {
             </article>
         `;
         bindAcademyTournamentSection(objective);
-    }
-
-    const popout = overlay.querySelector(".adventure-marker-popout");
-    if (!popout) return;
-
-    const resolvedState = mapState || adventureMapPositionState;
-    if (!resolvedState) return;
-
-    const viewportRect = viewport.getBoundingClientRect();
-    const markerPosition = getAdventureMarkerPosition(objective);
-    const left = resolvedState.translateX + ((markerPosition.xPercent / 100) * resolvedState.innerWidth);
-    const top = resolvedState.translateY + ((markerPosition.yPercent / 100) * resolvedState.innerHeight);
-
-    popout.style.left = `${left}px`;
-    popout.style.top = `${top}px`;
-    popout.classList.remove("below");
-
-    // Flip below marker if there is not enough room above.
-    const popoutRect = popout.getBoundingClientRect();
-    if (popoutRect.top < viewportRect.top + 8) {
-        popout.classList.add("below");
-    }
-
-    const visibilityPad = 28;
-    const markerVisible =
-        left >= -visibilityPad &&
-        left <= viewportRect.width + visibilityPad &&
-        top >= -visibilityPad &&
-        top <= viewportRect.height + visibilityPad;
-    popout.classList.toggle("is-hidden", !markerVisible);
-
-    const closeButton = overlay.querySelector(".adventure-popout-close");
-    if (closeButton && !closeButton.dataset.bound) {
-        closeButton.dataset.bound = "1";
-        closeButton.addEventListener("click", () => updateAdventureSelection(null));
+        bindLeagueCircuitSection(objective);
+        enrichAdventureOpponentWeaknessTooltips(targetRoot);
     }
 }
 
@@ -4079,32 +5245,237 @@ function renderAdventureTypeBadges(typeList) {
     `).join("");
 }
 
+function extractWeaknessTypes(weaknesses) {
+    if (!Array.isArray(weaknesses)) return [];
+
+    const matchedTypes = new Set();
+    weaknesses.forEach(entry => {
+        const value = String(entry || "").toLowerCase();
+        allTypes.forEach(typeName => {
+            if (value.includes(typeName)) {
+                matchedTypes.add(typeName);
+            }
+        });
+    });
+
+    return Array.from(matchedTypes);
+}
+
+function getAdventureBestCounters(weaknesses) {
+    const weaknessTypes = extractWeaknessTypes(weaknesses);
+    if (!weaknessTypes.length) {
+        return { status: "no-weakness-data", picks: [] };
+    }
+
+    const availableTeam = team.filter(member => member?.pokemon);
+    if (!availableTeam.length) {
+        return { status: "no-team", picks: [] };
+    }
+
+    const scoredCounters = availableTeam.map(member => {
+        const attackerTypes = Array.isArray(member.types)
+            ? member.types.map(type => String(type || "").toLowerCase()).filter(Boolean)
+            : [];
+        const hits = weaknessTypes.filter(type => attackerTypes.includes(type));
+
+        return {
+            name: member.pokemon,
+            hits,
+            score: hits.length
+        };
+    }).filter(counter => counter.score > 0);
+
+    if (!scoredCounters.length) {
+        return { status: "no-counter", picks: [] };
+    }
+
+    scoredCounters.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.name.localeCompare(b.name);
+    });
+
+    return {
+        status: "ok",
+        picks: scoredCounters.slice(0, 3)
+    };
+}
+
+function formatDisplayPokemonName(name) {
+    return String(name || "")
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join(" ");
+}
+
+function buildAdventureOpponentTooltip(weaknesses) {
+    const weaknessText = Array.isArray(weaknesses) && weaknesses.length
+        ? weaknesses.join(", ")
+        : "Weakness data not listed";
+    const counterResult = getAdventureBestCounters(weaknesses);
+
+    let counterText = "Best Team Pick: Not available";
+    if (counterResult.status === "no-team") {
+        counterText = "Best Team Pick: Add Pokemon in Team Planner to get recommendations";
+    } else if (counterResult.status === "no-counter") {
+        counterText = "Best Team Pick: No super-effective counters in selected team";
+    } else if (counterResult.status === "no-weakness-data") {
+        counterText = "Best Team Pick: Weakness data not listed for this opponent";
+    } else {
+        const picks = counterResult.picks.map(pick => {
+            const hitTypes = pick.hits.map(type => capitalize(type)).join("/");
+            return `${formatDisplayPokemonName(pick.name)} (${hitTypes})`;
+        }).join(", ");
+        counterText = `Best Team Pick: ${picks}`;
+    }
+
+    return `Weak to: ${weaknessText}\n${counterText}`;
+}
+
+function normalizeAdventureOpponentPokemonName(rawName) {
+    const value = String(rawName || "").trim();
+    if (!value) return "";
+
+    // Trim labels like "(Tera Ice)" and split entries like "Oranguru / Indeedee".
+    const withoutParens = value.replace(/\s*\([^)]*\)/g, "").trim();
+    const firstOption = withoutParens.split("/")[0].trim();
+    return normalize(firstOption);
+}
+
+function formatAdventureComputedWeaknesses(effectiveness) {
+    return Object.entries(effectiveness)
+        .filter(([, multiplier]) => multiplier > 1)
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([typeName, multiplier]) => {
+            const label = capitalize(typeName);
+            return multiplier >= 4 ? `${label} (x4)` : label;
+        });
+}
+
+async function resolveAdventureOpponentWeaknesses(pokemonName) {
+    const normalizedName = normalizeAdventureOpponentPokemonName(pokemonName);
+    if (!normalizedName) return null;
+
+    if (adventureOpponentWeaknessCache.has(normalizedName)) {
+        return adventureOpponentWeaknessCache.get(normalizedName);
+    }
+
+    const promise = (async () => {
+        const nameCandidates = [normalizedName];
+        if (normalizedName === "indeedee") {
+            nameCandidates.push("indeedee-male", "indeedee-female");
+        }
+
+        try {
+            let pokemonTypes = [];
+            for (const candidate of nameCandidates) {
+                try {
+                    const pokemon = await getPokemonData(candidate);
+                    pokemonTypes = Array.isArray(pokemon?.types)
+                        ? pokemon.types
+                            .map(entry => entry?.type?.name)
+                            .filter(type => typeof type === "string")
+                        : [];
+                    if (pokemonTypes.length) break;
+                } catch {
+                    // Try next candidate name.
+                }
+            }
+            if (!pokemonTypes.length) return null;
+
+            const effectiveness = await getTypeEffectiveness(pokemonTypes);
+            const weaknesses = formatAdventureComputedWeaknesses(effectiveness);
+            return weaknesses.length ? weaknesses : null;
+        } catch {
+            return null;
+        }
+    })();
+
+    adventureOpponentWeaknessCache.set(normalizedName, promise);
+    const resolved = await promise;
+    adventureOpponentWeaknessCache.set(normalizedName, resolved);
+    return resolved;
+}
+
+function enrichAdventureOpponentWeaknessTooltips(root = document) {
+    const unresolvedItems = Array.from(root.querySelectorAll('.adventure-team-item[data-opponent-name][data-weaknesses-computed="0"]'));
+    if (!unresolvedItems.length) return;
+
+    unresolvedItems.forEach(item => {
+        if (item.dataset.weaknessesPending === "1") return;
+
+        item.dataset.weaknessesPending = "1";
+        const opponentName = item.dataset.opponentName || "";
+
+        resolveAdventureOpponentWeaknesses(opponentName).then(weaknesses => {
+            if (!item.isConnected) return;
+            if (Array.isArray(weaknesses) && weaknesses.length) {
+                item.dataset.weaknesses = buildAdventureOpponentTooltip(weaknesses);
+            }
+            item.dataset.weaknessesComputed = "1";
+            item.dataset.weaknessesPending = "0";
+        });
+    });
+}
+
 function renderAdventureTeamList(teamList) {
     if (!Array.isArray(teamList) || !teamList.length) {
         return '<div class="adventure-team-empty">No team details listed.</div>';
     }
 
-    return `
-        <ul class="adventure-team-list">
-            ${teamList.map(entry => {
-                const name = escapeHtml(entry?.pokemon || "Unknown");
-                const level = entry?.level ? `Lv.${escapeHtml(String(entry.level))}` : "Lv.?";
-                const hideWeaknesses = Boolean(entry?.hideWeaknesses);
-                const weaknesses = Array.isArray(entry?.weaknesses) && entry.weaknesses.length
-                    ? entry.weaknesses.join(", ")
-                    : "Weakness data not listed";
-                const weaknessAttr = hideWeaknesses
-                    ? ""
-                    : ` data-weaknesses="Weak to: ${escapeHtml(weaknesses)}"`;
+    const standardEntries = [];
+    const variableEntries = [];
 
-                return `
-                    <li class="adventure-team-item${hideWeaknesses ? " no-weakness-tooltip" : ""}"${weaknessAttr}>
-                        <span class="adventure-team-item-name">${name}</span>
-                        <span class="adventure-team-item-level">${level}</span>
-                    </li>
-                `;
-            }).join("")}
-        </ul>
+    teamList.forEach(entry => {
+        const rawName = String(entry?.pokemon || "").trim();
+        const options = rawName
+            .split("/")
+            .map(option => option.trim())
+            .filter(Boolean);
+
+        if (options.length > 1) {
+            options.forEach(option => {
+                variableEntries.push({ ...entry, pokemon: option, hideWeaknesses: false });
+            });
+            return;
+        }
+
+        standardEntries.push(entry);
+    });
+
+    const renderTeamEntryItems = entries => entries.map(entry => {
+        const name = escapeHtml(entry?.pokemon || "Unknown");
+        const rawName = String(entry?.pokemon || "");
+        const level = entry?.level ? `Lv.${escapeHtml(String(entry.level))}` : "Lv.?";
+        const hideWeaknesses = Boolean(entry?.hideWeaknesses);
+        const hasWeaknesses = Array.isArray(entry?.weaknesses) && entry.weaknesses.length;
+        const tooltip = buildAdventureOpponentTooltip(entry?.weaknesses);
+        const weaknessAttr = ` data-weaknesses="${escapeHtml(tooltip)}"`;
+        const opponentAttr = rawName ? ` data-opponent-name="${escapeHtml(rawName)}"` : "";
+        const computedAttr = !hideWeaknesses && !hasWeaknesses
+            ? ' data-weaknesses-computed="0" data-weaknesses-pending="0"'
+            : "";
+
+        return `
+            <li class="adventure-team-item${hideWeaknesses ? " no-weakness-tooltip" : ""}"${weaknessAttr}${opponentAttr}${computedAttr}>
+                <span class="adventure-team-item-name">${name}</span>
+                <span class="adventure-team-item-level">${level}</span>
+            </li>
+        `;
+    }).join("");
+
+    return `
+        ${standardEntries.length
+            ? `<ul class="adventure-team-list">${renderTeamEntryItems(standardEntries)}</ul>`
+            : ""}
+        ${variableEntries.length
+            ? `
+                <section class="adventure-team-variants">
+                    <h5>Variable Pokemon</h5>
+                    <ul class="adventure-team-list">${renderTeamEntryItems(variableEntries)}</ul>
+                </section>
+            `
+            : ""}
     `;
 }
 
@@ -4123,15 +5494,13 @@ function renderAdventureStarterOptions(starterList, selectedStarterKey = null) {
             ${displayList.map(entry => {
                 const name = escapeHtml(entry?.pokemon || "Unknown");
                 const level = entry?.level ? `Lv.${escapeHtml(String(entry.level))}` : "Lv.?";
-                const weaknesses = Array.isArray(entry?.weaknesses) && entry.weaknesses.length
-                    ? entry.weaknesses.join(", ")
-                    : "Weakness data not listed";
+                const tooltip = buildAdventureOpponentTooltip(entry?.weaknesses);
                 const label = entry?.starterKey
                     ? `If you chose ${escapeHtml(capitalize(entry.starterKey))}`
                     : "Starter matchup";
 
                 return `
-                    <li class="adventure-team-item ${selectedStarter ? "selected" : ""}" data-weaknesses="Weak to: ${escapeHtml(weaknesses)}">
+                    <li class="adventure-team-item ${selectedStarter ? "selected" : ""}" data-weaknesses="${escapeHtml(tooltip)}">
                         <span class="adventure-team-item-name">${name}</span>
                         <span class="adventure-team-item-level">${level}</span>
                         <span class="adventure-team-item-note">${label}</span>
@@ -4153,6 +5522,36 @@ function getAdventureStarterMatchup(objective, gameKey = currentGame) {
 
 function hasAcademyTournamentData(objective) {
     return Array.isArray(objective?.academyTournament?.trainers) && objective.academyTournament.trainers.length > 0;
+}
+
+function isLeagueCircuitObjective(objective) {
+    const objectiveId = Number(objective?.id);
+    return [19, 20, 21, 22, 23, 24].includes(objectiveId);
+}
+
+function getLeagueCircuitObjectives(gameKey = currentGame) {
+    return getAdventureBaseObjectives(gameKey).filter(objective => isLeagueCircuitObjective(objective));
+}
+
+function createLeagueCircuitTrainerEntry(objective) {
+    const starterMatchup = getAdventureStarterMatchup(objective);
+    const starterTeamEntry = starterMatchup
+        ? [{
+            pokemon: `Starter Matchup: ${starterMatchup.pokemon}`,
+            level: starterMatchup.level,
+            weaknesses: starterMatchup.weaknesses || []
+        }]
+        : [];
+    const trainerName = String(objective?.leader || objective?.name || "").replace(/^Champion\s+/i, "").replace(/^Elite Four:\s*/i, "").trim() || "Unknown";
+
+    return {
+        objectiveId: objective.id,
+        name: trainerName,
+        title: String(objective?.name || "").startsWith("Champion ") ? "Champion Battle" : "Elite Four Battle",
+        description: objective?.description || "",
+        weakAgainst: Array.isArray(objective?.weaknesses) ? objective.weaknesses : [],
+        team: [...(Array.isArray(objective?.team) ? objective.team : []), ...starterTeamEntry]
+    };
 }
 
 function renderAcademyTournamentTrainerButtons(trainers) {
@@ -4209,6 +5608,35 @@ function renderAcademyTournamentSection(objective) {
     `;
 }
 
+function renderLeagueCircuitSection(objective) {
+    if (!isLeagueCircuitObjective(objective)) return "";
+
+    const circuitObjectives = getLeagueCircuitObjectives();
+    if (!circuitObjectives.length) return "";
+
+    const trainers = circuitObjectives.map(createLeagueCircuitTrainerEntry);
+    const selectedTrainer = trainers.find(entry => Number(entry.objectiveId) === Number(objective.id)) || trainers[0];
+
+    return `
+        <section class="adventure-tournament-panel adventure-league-panel" data-objective-id="${objective.id}">
+            <h4>Elite Four + Champion Circuit</h4>
+            <div class="adventure-trainer-options">
+                ${trainers.map(entry => `
+                    <button
+                        type="button"
+                        class="adventure-trainer-option ${Number(entry.objectiveId) === Number(selectedTrainer.objectiveId) ? "active" : ""}"
+                        data-circuit-objective-id="${entry.objectiveId}">
+                        ${escapeHtml(entry.name)}
+                    </button>
+                `).join("")}
+            </div>
+            <div class="adventure-trainer-detail" data-trainer-detail>
+                ${renderAcademyTournamentTrainerDetail(selectedTrainer)}
+            </div>
+        </section>
+    `;
+}
+
 function bindAcademyTournamentSection(objective) {
     if (!hasAcademyTournamentData(objective)) return;
 
@@ -4228,8 +5656,32 @@ function bindAcademyTournamentSection(objective) {
 
             options.forEach(item => item.classList.toggle('active', item === option));
             detailEl.innerHTML = renderAcademyTournamentTrainerDetail(trainer);
+            enrichAdventureOpponentWeaknessTooltips(detailEl);
         });
     });
+
+    enrichAdventureOpponentWeaknessTooltips(panel);
+}
+
+function bindLeagueCircuitSection(objective) {
+    if (!isLeagueCircuitObjective(objective)) return;
+
+    const panel = document.querySelector(`.adventure-league-panel[data-objective-id="${objective.id}"]`);
+    if (!panel) return;
+
+    const options = Array.from(panel.querySelectorAll('.adventure-trainer-option[data-circuit-objective-id]'));
+    if (!options.length) return;
+
+    options.forEach(option => {
+        option.addEventListener("click", () => {
+            const objectiveId = Number(option.dataset.circuitObjectiveId);
+            if (!Number.isFinite(objectiveId)) return;
+            if (objectiveId === Number(selectedAdventureObjectiveId)) return;
+            updateAdventureSelection(objectiveId);
+        });
+    });
+
+    enrichAdventureOpponentWeaknessTooltips(panel);
 }
 
 function isEliteFourAndBeyondObjective(objective) {
@@ -4266,6 +5718,57 @@ function setAdventureStarterChoice(gameKey, starterKey) {
         [gameKey]: starterKey
     };
     saveAdventureStarterChoices();
+}
+
+function renderAdventureCategoryFilters(gameKey = currentGame) {
+    const categories = getAdventureAvailableCategories(gameKey);
+    if (!categories.length) return "";
+
+    const activeCategories = getAdventureActiveCategorySet(gameKey);
+    return `
+        <div class="adventure-category-filters" role="group" aria-label="Adventure category filters">
+            ${categories.map(category => {
+                const meta = getAdventureCategoryMeta(category);
+                const isActive = activeCategories.has(category);
+                return `
+                    <button
+                        type="button"
+                        class="adventure-filter-chip ${isActive ? "active" : ""}"
+                        style="--chip-color:${meta.color}"
+                        data-adventure-filter="${escapeHtml(category)}"
+                        aria-pressed="${isActive ? "true" : "false"}">
+                        <span class="adventure-filter-chip-icon">${escapeHtml(meta.icon)}</span>
+                        <span>${escapeHtml(category)}</span>
+                    </button>
+                `;
+            }).join("")}
+        </div>
+    `;
+}
+
+function bindAdventureCategoryFilters() {
+    const filterButtons = Array.from(document.querySelectorAll(".adventure-filter-chip[data-adventure-filter]"));
+    if (!filterButtons.length) return;
+
+    filterButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            const category = button.dataset.adventureFilter;
+            if (!category) return;
+            toggleAdventureCategoryFilter(category, currentGame);
+
+            if (currentPage === "adventure") {
+                renderAdventureGuidePage();
+            }
+        });
+    });
+}
+
+function renderAdventureMarkerEditorControls() {
+    return "";
+}
+
+function bindAdventureMarkerEditorControls() {
+    return;
 }
 
 function renderAdventureStarterSelector() {
@@ -4336,10 +5839,6 @@ function renderSwordShieldAdventureDetail(objective) {
                 <span class="badge-tag">Lv.${escapeHtml(objective.level)}</span>
             </div>
             <p class="adventure-map-modal-description">${escapeHtml(objective.description)}</p>
-            <div class="adventure-map-modal-meta">
-                <div class="adventure-marker-popout-row"><span>Location</span><strong>${escapeHtml(objective.location || "Story location")}</strong></div>
-                <div class="adventure-marker-popout-row"><span>${escapeHtml(getAdventureRoleLabel(objective.category))}</span><strong>${escapeHtml(objective.leader || "Various")}</strong></div>
-            </div>
             ${starterSection}
             <div class="adventure-marker-popout-weaknesses">
                 <h4>Weak Against</h4>
@@ -4351,15 +5850,38 @@ function renderSwordShieldAdventureDetail(objective) {
             </div>
         </article>
     `;
+
+    enrichAdventureOpponentWeaknessTooltips(detailRoot);
 }
 
 function setupAdventureMapDragging() {
+    if (adventureLeafletMap) {
+        return;
+    }
+
     const viewport = el("adventureMapViewport");
     const inner = el("adventureMapInner");
     if (!viewport || !inner) return;
 
     const onPointerDown = (event) => {
         if (event.button !== undefined && event.button !== 0) return;
+
+        if (adventureMarkerEditMode) {
+            const markerButton = event.target.closest(".adventure-marker[data-objective-id]");
+            if (markerButton) {
+                const objectiveId = Number(markerButton.dataset.objectiveId);
+                if (!Number.isFinite(objectiveId)) return;
+
+                adventureMarkerDragState = {
+                    pointerId: event.pointerId,
+                    objectiveId,
+                    markerElement: markerButton,
+                    captured: false
+                };
+                event.preventDefault();
+                return;
+            }
+        }
 
         const current = adventureMapPositionState || applyAdventureMapTransform(0, 0);
         if (!current) return;
@@ -4376,6 +5898,28 @@ function setupAdventureMapDragging() {
     };
 
     const onPointerMove = (event) => {
+        if (adventureMarkerDragState && event.pointerId === adventureMarkerDragState.pointerId) {
+            const innerRect = inner.getBoundingClientRect();
+            if (!innerRect.width || !innerRect.height) return;
+
+            if (!adventureMarkerDragState.captured) {
+                adventureMarkerDragState.captured = true;
+                viewport.setPointerCapture(event.pointerId);
+            }
+
+            const xPercent = ((event.clientX - innerRect.left) / innerRect.width) * 100;
+            const yPercent = ((event.clientY - innerRect.top) / innerRect.height) * 100;
+            const clampedX = Math.max(0, Math.min(100, xPercent));
+            const clampedY = Math.max(0, Math.min(100, yPercent));
+
+            setAdventureMarkerOverride(adventureMarkerDragState.objectiveId, clampedX, clampedY);
+            if (adventureMarkerDragState.markerElement) {
+                adventureMarkerDragState.markerElement.style.left = `${clampedX}%`;
+                adventureMarkerDragState.markerElement.style.top = `${clampedY}%`;
+            }
+            return;
+        }
+
         if (!adventureDragState || event.pointerId !== adventureDragState.pointerId) return;
 
         const deltaX = event.clientX - adventureDragState.startX;
@@ -4395,12 +5939,27 @@ function setupAdventureMapDragging() {
 
         const nextState = applyAdventureMapTransform(adventureDragState.baseX + deltaX, adventureDragState.baseY + deltaY);
         if (nextState) {
-            const objective = getAdventureObjectiveById(selectedAdventureObjectiveId);
-            renderAdventureMapPopout(objective, nextState);
+            const objective = selectedAdventureObjectiveId != null
+                ? getAdventureObjectiveById(selectedAdventureObjectiveId)
+                : null;
+            renderAdventureMapPopout(objective);
         }
     };
 
     const finishDrag = (event) => {
+        if (adventureMarkerDragState && event.pointerId === adventureMarkerDragState.pointerId) {
+            if (event.pointerId !== undefined && viewport.hasPointerCapture(event.pointerId)) {
+                viewport.releasePointerCapture(event.pointerId);
+            }
+            selectedAdventureObjectiveId = adventureMarkerDragState.objectiveId;
+            adventureMarkerDragState = null;
+            adventureSuppressMarkerClick = true;
+            setTimeout(() => { adventureSuppressMarkerClick = false; }, 0);
+            saveAdventureMarkerOverrides();
+            renderAdventureGuidePage();
+            return;
+        }
+
         if (!adventureDragState || event.pointerId !== adventureDragState.pointerId) return;
 
         if (adventureDragState.dragged) {
@@ -4437,7 +5996,7 @@ function updateAdventureSelection(id) {
                 detailRoot.innerHTML = '<div class="adventure-list-empty">Select a battle to view details.</div>';
             }
         } else {
-            renderAdventureMapPopout(null, null);
+            renderAdventureMapPopout(null);
         }
         return;
     }
@@ -4477,6 +6036,7 @@ function renderAdventureGuidePage() {
 
     if (isSwordShieldGame()) {
         const starterSelector = renderAdventureStarterSelector();
+        const categoryFilters = renderAdventureCategoryFilters();
         pageContent.innerHTML = `
             <section class="adventure-page">
                 <header class="adventure-header">
@@ -4489,6 +6049,7 @@ function renderAdventureGuidePage() {
                         </label>
                         ${starterSelector}
                     </div>
+                    ${categoryFilters}
                 </header>
 
                 <div class="adventure-layout">
@@ -4503,8 +6064,7 @@ function renderAdventureGuidePage() {
             </section>
         `;
 
-        const firstObjectiveId = getAdventureVisibleObjectives()[0]?.id || null;
-        selectedAdventureObjectiveId = getAdventureObjectiveById(selectedAdventureObjectiveId)?.id || firstObjectiveId;
+        selectedAdventureObjectiveId = getAdventureObjectiveById(selectedAdventureObjectiveId)?.id || null;
         renderAdventureList();
         renderSwordShieldAdventureDetail(getAdventureObjectiveById(selectedAdventureObjectiveId));
 
@@ -4537,11 +6097,14 @@ function renderAdventureGuidePage() {
         }
 
         bindAdventureStarterSelector();
+        bindAdventureCategoryFilters();
 
         return;
     }
 
     const starterSelector = renderAdventureStarterSelector();
+    const categoryFilters = renderAdventureCategoryFilters();
+    const markerEditorControls = renderAdventureMarkerEditorControls();
     pageContent.innerHTML = `
         <section class="adventure-page">
             <header class="adventure-header">
@@ -4554,36 +6117,41 @@ function renderAdventureGuidePage() {
                     </label>
                     ${starterSelector}
                 </div>
+                ${categoryFilters}
             </header>
 
-            <div class="adventure-layout">
+            <div class="adventure-layout adventure-layout-map">
                 <aside class="adventure-column adventure-list-column">
                     <div id="adventureObjectiveList" class="adventure-objective-list"></div>
                 </aside>
 
-                <section class="adventure-column adventure-map-column">
+                <section class="adventure-column adventure-map-column ${adventureMarkerEditMode ? "marker-edit-on" : ""}">
                     <div class="adventure-map-zoom-controls" aria-label="Map zoom controls">
                         <button id="adventureZoomOut" type="button" class="adventure-map-zoom-btn" aria-label="Zoom out">-</button>
-                        <span id="adventureMapZoomValue" class="adventure-map-zoom-value">100%</span>
+                        <span id="adventureMapZoomValue" class="adventure-map-zoom-value">0%</span>
                         <button id="adventureZoomIn" type="button" class="adventure-map-zoom-btn" aria-label="Zoom in">+</button>
                     </div>
                     <div id="adventureMapViewport" class="adventure-map-viewport">
                         <div id="adventureMapInner" class="adventure-map-inner"></div>
                     </div>
-                    <div id="adventureMapOverlay" class="adventure-map-overlay"></div>
+                </section>
+
+                <section class="adventure-column adventure-detail-column">
+                    <div id="adventureStaticDetail" class="adventure-static-detail"></div>
                 </section>
             </div>
+            ${markerEditorControls}
         </section>
     `;
 
-    const firstObjectiveId = getAdventureVisibleObjectives()[0]?.id || null;
-    selectedAdventureObjectiveId = getAdventureObjectiveById(selectedAdventureObjectiveId)?.id || firstObjectiveId;
+    selectedAdventureObjectiveId = getAdventureObjectiveById(selectedAdventureObjectiveId)?.id || null;
     renderAdventureList();
     renderAdventureMap();
 
     const objectiveList = el("adventureObjectiveList");
     const mapInner = el("adventureMapInner");
     const overlay = el("adventureMapOverlay");
+    const detailRoot = el("adventureStaticDetail");
     const zoomInBtn = el("adventureZoomIn");
     const zoomOutBtn = el("adventureZoomOut");
     const viewport = el("adventureMapViewport");
@@ -4620,7 +6188,7 @@ function renderAdventureGuidePage() {
         });
     }
 
-    if (mapInner) {
+    if (mapInner && !adventureLeafletMap) {
         mapInner.addEventListener("click", event => {
             if (adventureSuppressMarkerClick) return;
             const marker = event.target.closest(".adventure-marker");
@@ -4634,6 +6202,14 @@ function renderAdventureGuidePage() {
 
     if (overlay) {
         overlay.addEventListener("click", event => {
+            if (event.target.closest(".adventure-popout-close")) {
+                updateAdventureSelection(null);
+            }
+        });
+    }
+
+    if (detailRoot) {
+        detailRoot.addEventListener("click", event => {
             if (event.target.closest(".adventure-popout-close")) {
                 updateAdventureSelection(null);
             }
@@ -4654,7 +6230,7 @@ function renderAdventureGuidePage() {
         });
     }
 
-    if (viewport) {
+    if (viewport && !adventureLeafletMap) {
         viewport.addEventListener("wheel", event => {
             event.preventDefault();
             const rect = viewport.getBoundingClientRect();
@@ -4667,6 +6243,8 @@ function renderAdventureGuidePage() {
     }
 
     bindAdventureStarterSelector();
+    bindAdventureCategoryFilters();
+    bindAdventureMarkerEditorControls();
 
     setupAdventureMapDragging();
 
@@ -4674,7 +6252,11 @@ function renderAdventureGuidePage() {
         window.removeEventListener("resize", adventureResizeHandler);
     }
     adventureResizeHandler = () => {
-        sizeAdventureMapInner();
+        if (adventureLeafletMap) {
+            adventureLeafletMap.invalidateSize();
+        } else {
+            sizeAdventureMapInner();
+        }
         const objective = getAdventureObjectiveById(selectedAdventureObjectiveId);
         centerAdventureObjective(objective);
     };
@@ -4722,6 +6304,9 @@ loadTheme();
 loadAdventureProgress();
 loadAdventurePreferences();
 loadAdventureStarterChoices();
+loadAdventureCategoryFilters();
+loadAdventureMarkerOverrides();
+loadPaldeaMapFilters();
 loadTeamPlannerState();
 window.addEventListener("beforeunload", saveTeamPlannerState);
 document.addEventListener("visibilitychange", () => {
